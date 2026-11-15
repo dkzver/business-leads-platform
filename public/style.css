@@ -22,3 +22,5 @@
 @media(max-width:650px){.company-cell{min-width:150px}.table-action{min-width:55px;padding:7px 8px}.status-select{min-width:120px;font-size:9px}}
 
 .phone-action{background:#f1f5f9;color:#334155;margin:2px 0}.phone-action:hover{background:#e2e8f0}
+
+.company-search{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}.search-company{display:inline-flex;align-items:center;padding:5px 7px;border-radius:5px;text-decoration:none;font:700 9px 'DM Sans';white-space:nowrap}.yandex-search{background:#fff0e8;color:#c34b20}.gis-search{background:#eaf5ed;color:#267746}.search-company:hover{filter:brightness(.96)}
