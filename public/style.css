@@ -41,3 +41,6 @@
 .offer-actions{flex-wrap:wrap}
 @media(max-width:850px){.topbar{align-items:flex-start}.topbar-actions{max-width:65%}}
 @media(max-width:650px){.topbar{flex-direction:column}.topbar-actions{max-width:100%;width:100%;justify-content:flex-start}.topbar-actions button{font-size:10px;padding:9px 10px}.offer-dialog form{padding:17px}.offer-actions button{flex:1}.offer-dialog .dialog-head h2{font-size:17px}}
+
+
+.category-radio-filter{min-width:0;margin:0;padding:7px 9px;border:1px solid #e4e8f0;border-radius:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.category-radio-filter legend{padding:0 4px;color:#7e899d;font-size:9px}.category-radio-filter label{display:inline-flex;align-items:center;gap:4px;color:#49556b;font-size:10px;white-space:nowrap;cursor:pointer}.category-radio-filter input{width:auto;margin:0;accent-color:#5868e9}.category-radio-filter label:has(input:checked) span{color:#4657d7;font-weight:700}@media(max-width:1000px){.category-radio-filter{grid-column:1/-1}}
