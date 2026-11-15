@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: business-leads-platform
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: business-leads-db
+          property: connectionString
+
+databases:
+  - name: business-leads-db
+    plan: free
+    databaseName: business_leads
+    user: business_leads_user
