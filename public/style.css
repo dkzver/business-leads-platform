@@ -20,3 +20,5 @@
 .status-select:focus{outline:2px solid #5868e933;border-color:#8792f5}
 .status-select:disabled{opacity:.6}
 @media(max-width:650px){.company-cell{min-width:150px}.table-action{min-width:55px;padding:7px 8px}.status-select{min-width:120px;font-size:9px}}
+
+.phone-action{background:#f1f5f9;color:#334155;margin:2px 0}.phone-action:hover{background:#e2e8f0}
