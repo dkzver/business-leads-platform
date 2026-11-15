@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <title>Business Leads — CRM</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">B</span><span>Business Leads<small>ПАНЕЛЬ УПРАВЛЕНИЯ</small></span></div>
+      <div class="side-label">РАБОЧЕЕ ПРОСТРАНСТВО</div>
+      <button class="nav active">▦ <span>Компании</span></button>
+      <div class="side-note"><b>CRM для лидов</b><p>Собирайте контакты, ведите историю и готовьте персональные обращения.</p></div>
+      <div class="sidebar-bottom">Версия 1.0 · Beta</div>
+    </aside>
+    <main class="main">
+      <header class="topbar"><div><span class="eyebrow">ВАША БАЗА КЛИЕНТОВ</span><h1>Компании</h1></div><button id="addBtn" class="primary">＋ Добавить компанию</button></header>
+      <section class="stats">
+        <article class="stat"><span>Всего компаний</span><strong id="totalCount">0</strong><small>В вашей базе</small></article>
+        <article class="stat"><span>Новые</span><strong id="newCount">0</strong><small>Ожидают контакта</small></article>
+        <article class="stat"><span>В работе</span><strong id="workCount">0</strong><small>Контакт уже начат</small></article>
+        <article class="stat"><span>Ответили</span><strong id="replyCount">0</strong><small>Есть обратная связь</small></article>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><div><h2>База компаний</h2><p>Поиск, фильтрация и управление контактами</p></div><button id="refreshBtn" class="secondary">↻ Обновить</button></div>
+        <div class="filters">
+          <input id="search" placeholder="⌕  Поиск по названию, телефону, email…">
+          <input id="countryFilter" placeholder="Страна">
+          <input id="cityFilter" placeholder="Город">
+          <select id="categoryFilter"><option value="">Все направления</option><option>Клининг</option><option>Автосервис</option><option>Другое</option></select>
+          <select id="statusFilter"><option value="">Все статусы</option><option>Новый</option><option>Письмо подготовлено</option><option>Связались</option><option>Ответили</option><option>Не подходит</option></select>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>КОМПАНИЯ</th><th>НАПРАВЛЕНИЕ</th><th>КОНТАКТЫ</th><th>ГОРОД / СТРАНА</th><th>СТАТУС</th><th></th></tr></thead><tbody id="companyRows"><tr><td colspan="6" class="empty">Загрузка…</td></tr></tbody></table></div>
+        <div id="emptyState" class="empty-state" hidden><div class="empty-icon">▤</div><b>Пока нет компаний</b><p>Добавьте первую компанию, чтобы начать вести базу лидов.</p><button class="primary" id="emptyAdd">＋ Добавить компанию</button></div>
+        <div class="table-foot"><span id="resultCount">0 записей</span><span>Данные сохраняются в базе приложения</span></div>
+      </section>
+      <footer>Business Leads Platform <span>·</span> Инструмент для работы с потенциальными клиентами</footer>
+    </main>
+  </div>
+  <dialog id="companyDialog">
+    <form id="companyForm">
+      <div class="dialog-head"><div><span class="eyebrow">КАРТОЧКА ЛИДА</span><h2 id="dialogTitle">Новая компания</h2></div><button type="button" class="close" id="closeDialog">×</button></div>
+      <input type="hidden" id="companyId">
+      <div class="form-grid">
+        <label class="wide">Название компании *<input id="name" required maxlength="180" placeholder="Например, АвтоМастер"></label>
+        <label>Направление<select id="category"><option>Автосервис</option><option>Клининг</option><option>Другое</option></select></label>
+        <label>Статус<select id="status"><option>Новый</option><option>Письмо подготовлено</option><option>Связались</option><option>Ответили</option><option>Не подходит</option></select></label>
+        <label>Страна<input id="country" placeholder="Россия"></label><label>Город<input id="city" placeholder="Москва"></label>
+        <label>Телефон<input id="phone" type="tel" placeholder="+7…"></label><label>Email<input id="email" type="email" placeholder="info@company.ru"></label>
+        <label class="wide">Сайт<input id="website" type="url" placeholder="https://…"></label>
+        <label class="wide">Источник контакта<input id="source" placeholder="Сайт, 2ГИС, Яндекс Карты…"></label>
+        <label class="wide">Заметки<textarea id="notes" rows="3" placeholder="Что важно знать о компании…"></textarea></label>
+      </div>
+      <p id="formError" class="error" role="alert"></p>
+      <div class="dialog-actions"><button type="button" class="secondary" id="cancelDialog">Отмена</button><button class="primary" type="submit">Сохранить компанию</button></div>
+    </form>
+  </dialog>
+  <script src="/app.js"></script>
+</body>
+</html>
