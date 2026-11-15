@@ -4,6 +4,7 @@ const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 10000;
+if (!process.env.APP_PASSWORD) { console.error('APP_PASSWORD is required. Set it as a secret environment variable.'); process.exit(1); }
 if (!process.env.DATABASE_URL) {
   console.error('DATABASE_URL is required. Configure a Render PostgreSQL database.');
   process.exit(1);
@@ -14,6 +15,16 @@ const pool = new Pool({
 });
 
 app.use(express.json({ limit: '1mb' }));
+app.use((req, res, next) => {
+  if (req.path === '/api/health') return next();
+  const header = req.headers.authorization || '';
+  const encoded = header.startsWith('Basic ') ? header.slice(6) : '';
+  let password = '';
+  try { password = Buffer.from(encoded, 'base64').toString('utf8').split(':').slice(1).join(':'); } catch {}
+  if (password && password === process.env.APP_PASSWORD) return next();
+  res.set('WWW-Authenticate', 'Basic realm="Business Leads", charset="UTF-8"');
+  res.status(401).send('Требуется пароль для доступа к Business Leads.');
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 async function initDb() {
