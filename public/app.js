@@ -40,6 +40,56 @@ function showToast(message) {
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => toast.classList.remove('visible'), 4200);
 }
+const offerDefaults = {
+  cleaning: {
+    title: 'Коммерческое предложение · Клининг',
+    offer: 'Здравствуйте!\n\nПредлагаем услуги профессионального клининга для вашей компании. Помогаем поддерживать чистоту в офисах, торговых и коммерческих помещениях без необходимости содержать собственный штат уборщиков.\n\nЧто можем предложить:\n• регулярная уборка по согласованному графику;\n• генеральная и послестроительная уборка;\n• уборка санузлов, общих зон и рабочих помещений;\n• подбор персонала и инвентаря под ваш объект.\n\nГотовы рассчитать стоимость под площадь и задачи объекта, а также предложить удобный график. Будем рады обсудить сотрудничество.\n\nС уважением,\n[Ваше имя]\n[Компания]\n[Телефон]',
+    subject: 'Предложение по клининговому обслуживанию для {Компания}',
+    email: 'Здравствуйте!\n\nМеня зовут [Ваше имя], представляю [Ваша компания]. Хотел(а) бы предложить вашей компании услуги профессионального клининга.\n\nМожем организовать регулярную или разовую уборку помещений в {Город}, подобрать график и рассчитать стоимость под ваши задачи.\n\nПодскажите, пожалуйста, актуально ли для вас такое предложение? Готов(а) направить расчёт и ответить на вопросы.\n\nС уважением,\n[Ваше имя]\n[Телефон]\n[Сайт]'
+  },
+  auto: {
+    title: 'Коммерческое предложение · Автосервис',
+    offer: 'Здравствуйте!\n\nПредлагаем сотрудничество в сфере привлечения клиентов и продвижения услуг вашего автосервиса. Наша задача — помочь увеличить количество обращений от автовладельцев, которым нужны ремонт и обслуживание автомобилей.\n\nВозможные направления продвижения:\n• реклама услуг диагностики и технического обслуживания;\n• продвижение ремонта двигателя, ходовой части и тормозной системы;\n• привлечение заявок на сезонные работы и замену расходников;\n• подготовка рекламных предложений под популярные услуги.\n\nПредлагаем обсудить ваши приоритетные услуги и подобрать формат продвижения с понятным бюджетом.\n\nС уважением,\n[Ваше имя]\n[Компания]\n[Телефон]',
+    subject: 'Предложение по привлечению клиентов для {Компания}',
+    email: 'Здравствуйте!\n\nМеня зовут [Ваше имя], представляю [Ваша компания]. Обращаюсь с предложением помочь вашему автосервису получать дополнительные обращения от автовладельцев в {Город}.\n\nМожно начать с продвижения наиболее востребованных услуг — диагностики, ремонта ходовой части, ТО и сезонных работ. Предлагаем обсудить задачи вашего сервиса и подготовить подходящий вариант сотрудничества.\n\nПодскажите, пожалуйста, кому можно направить подробное предложение?\n\nС уважением,\n[Ваше имя]\n[Телефон]\n[Сайт]'
+  }
+};
+function readOfferTemplates() {
+  try { return {...offerDefaults, ...JSON.parse(localStorage.getItem('businessLeadOfferTemplates') || '{}')}; }
+  catch { return {...offerDefaults}; }
+}
+let offerTemplates = readOfferTemplates();
+function openOffer(type) {
+  const data = offerTemplates[type] || offerDefaults[type];
+  $('offerType').value = type;
+  $('offerDialogTitle').textContent = data.title;
+  $('offerText').value = data.offer;
+  $('emailSubject').value = data.subject;
+  $('emailBody').value = data.email;
+  $('offerSaved').textContent = '';
+  $('offerDialog').showModal();
+}
+function saveOffer() {
+  const type = $('offerType').value;
+  offerTemplates[type] = {
+    title: offerDefaults[type].title,
+    offer: $('offerText').value,
+    subject: $('emailSubject').value,
+    email: $('emailBody').value
+  };
+  localStorage.setItem('businessLeadOfferTemplates', JSON.stringify(offerTemplates));
+  $('offerSaved').textContent = 'Шаблон сохранён в этом браузере.';
+}
+async function copyText(value, label) {
+  try { await navigator.clipboard.writeText(value); showToast(label + ' скопировано'); }
+  catch { showToast('Не удалось скопировать автоматически. Выделите текст и скопируйте вручную.'); }
+}
+$('cleaningOfferBtn').onclick = () => openOffer('cleaning');
+$('autoOfferBtn').onclick = () => openOffer('auto');
+$('closeOfferDialog').onclick = () => $('offerDialog').close();
+$('saveOfferBtn').onclick = saveOffer;
+$('copyOfferBtn').onclick = () => copyText($('offerText').value, 'КП');
+$('copyEmailBtn').onclick = () => copyText('Тема: ' + $('emailSubject').value + '\\n\\n' + $('emailBody').value, 'Шаблон письма');
 function render() {
   $('totalCount').textContent=companies.length;
   $('newCount').textContent=companies.filter(c=>c.status==='Новый').length;
