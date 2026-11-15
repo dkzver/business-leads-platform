@@ -30,7 +30,7 @@
           <input id="search" placeholder="⌕  Поиск по названию, телефону, email…">
           <input id="countryFilter" placeholder="Страна">
           <input id="cityFilter" placeholder="Город">
-          <fieldset class="category-radio-filter" aria-label="Фильтр по направлению"><legend>Направление</legend><label><input type="radio" name="categoryFilter" value="" checked><span>Все</span></label><label><input type="radio" name="categoryFilter" value="Клининг"><span>Уборка</span></label><label><input type="radio" name="categoryFilter" value="Автосервис"><span>Автосервис</span></label><label><input type="radio" name="categoryFilter" value="Другое"><span>Другое</span></label></fieldset>
+          <select id="categoryFilter" aria-label="Фильтр по направлению"><option value="">Все направления</option><option value="Клининг">Уборка</option><option value="Автосервис">Автосервис</option><option value="Другое">Другое</option></select>
           <select id="statusFilter"><option value="">Все статусы</option><option>Новый</option><option>Письмо подготовлено</option><option>Связались</option><option>Ответили</option><option>Не подходит</option></select>
         </div>
         <div class="table-wrap"><table><thead><tr><th>КОМПАНИЯ</th><th>ТЕЛЕФОН</th><th>ПОЧТА</th><th>МЕССЕНДЖЕР 1</th><th>МЕССЕНДЖЕР 2</th><th>СТАТУС</th><th></th></tr></thead><tbody id="companyRows"><tr><td colspan="6" class="empty">Загрузка…</td></tr></tbody></table></div>
