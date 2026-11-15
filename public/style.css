@@ -24,3 +24,20 @@
 .phone-action{background:#f1f5f9;color:#334155;margin:2px 0}.phone-action:hover{background:#e2e8f0}
 
 .company-search{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}.search-company{display:inline-flex;align-items:center;padding:5px 7px;border-radius:5px;text-decoration:none;font:700 9px 'DM Sans';white-space:nowrap}.yandex-search{background:#fff0e8;color:#c34b20}.gis-search{background:#eaf5ed;color:#267746}.search-company:hover{filter:brightness(.96)}
+
+.topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.offer-cleaning{background:#eaf5ed;color:#267746;border-color:#d7eadc}
+.offer-auto{background:#edf1ff;color:#425bd1;border-color:#dfe5ff}
+.offer-dialog{width:min(760px,calc(100% - 24px));max-height:90vh;overflow:auto}
+.offer-dialog form{padding:25px}
+.offer-dialog .dialog-head{margin-bottom:16px}
+.offer-dialog .dialog-head h2{margin-bottom:5px}
+.offer-hint{font-size:11px;line-height:1.5;color:#8490a3;margin:5px 0 12px}
+.offer-fields{display:grid;gap:12px}
+.offer-fields label{display:block;color:#68758a;font-size:11px;font-weight:700}
+.offer-fields input,.offer-fields textarea{display:block;width:100%;margin-top:6px;border:1px solid #e2e7ef;border-radius:7px;padding:11px;background:#fff;color:#29364b;font:12px/1.55 'DM Sans';resize:vertical}
+.offer-fields textarea:focus,.offer-fields input:focus{outline:2px solid #5868e922;border-color:#8792f5}
+.offer-saved{min-height:15px;color:#25804b;font-size:11px}
+.offer-actions{flex-wrap:wrap}
+@media(max-width:850px){.topbar{align-items:flex-start}.topbar-actions{max-width:65%}}
+@media(max-width:650px){.topbar{flex-direction:column}.topbar-actions{max-width:100%;width:100%;justify-content:flex-start}.topbar-actions button{font-size:10px;padding:9px 10px}.offer-dialog form{padding:17px}.offer-actions button{flex:1}.offer-dialog .dialog-head h2{font-size:17px}}
