@@ -4,7 +4,7 @@ const statuses = ['Новый','Письмо подготовлено','Связ
 let companies = [];
 let timer;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const filters = () => ({q:$('search').value.trim(),country:$('countryFilter').value.trim(),city:$('cityFilter').value.trim(),category:document.querySelector('input[name="categoryFilter"]:checked').value,status:$('statusFilter').value});
+const filters = () => ({q:$('search').value.trim(),country:$('countryFilter').value.trim(),city:$('cityFilter').value.trim(),category:$('categoryFilter').value,status:$('statusFilter').value});
 async function request(url, options={}) {
   const response = await fetch(url,{headers:{'Content-Type':'application/json'},...options});
   if (!response.ok) { let data={}; try{data=await response.json()}catch{} throw new Error(data.error || 'Ошибка запроса'); }
@@ -157,9 +157,9 @@ $('companyRows').onchange=async e=>{
     showToast('Статус сохранён');
   } catch(err) { alert(err.message); await load(); }
 };
-['search','countryFilter','cityFilter','statusFilter'].forEach(id=>{
+['search','countryFilter','cityFilter','categoryFilter','statusFilter'].forEach(id=>{
   $(id).addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(load,250);});
   $(id).addEventListener('change',load);
 });
-document.querySelectorAll('input[name="categoryFilter"]').forEach(radio=>radio.addEventListener('change',load));
+
 load();
