@@ -1,5 +1,6 @@
 const $ = id => document.getElementById(id);
 const fields = ['name','category','status','country','city','phone','email','website','source','notes'];
+const statuses = ['Новый','Письмо подготовлено','Связались','Ответили','Не подходит'];
 let companies = [];
 let timer;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -10,8 +11,8 @@ async function request(url, options={}) {
   return response.status===204 ? null : response.json();
 }
 function phoneForMessenger(value) {
-  const first = String(value || '').split(/[;,\\n]/)[0].trim();
-  let digits = first.replace(/\\D/g, '');
+  const first = String(value || '').split(/[;,\n]/)[0].trim();
+  let digits = first.replace(/\D/g, '');
   if (digits.length === 11 && digits[0] === '8') digits = '7' + digits.slice(1);
   return digits;
 }
@@ -28,10 +29,6 @@ function showToast(message) {
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => toast.classList.remove('visible'), 4200);
 }
-function badge(status) {
-  const cls = status==='Новый'?'new':status==='Ответили'?'reply':status==='Связались'||status==='Письмо подготовлено'?'work':'';
-  return '<span class="badge '+cls+'">'+esc(status)+'</span>';
-}
 function render() {
   $('totalCount').textContent=companies.length;
   $('newCount').textContent=companies.filter(c=>c.status==='Новый').length;
@@ -41,35 +38,58 @@ function render() {
   $('emptyState').hidden=companies.length!==0;
   $('companyRows').innerHTML=companies.map(c=>{
     const digits = phoneForMessenger(c.phone);
-    const contact=[c.phone?'<span>'+esc(c.phone)+'</span>':'',c.email?'<a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a>':'',c.website?'<a href="'+esc(c.website)+'" target="_blank" rel="noopener">Сайт ↗</a>':'',digits?'<div class="messenger-actions"><a class="messenger-btn whatsapp" href="https://wa.me/'+digits+'" target="_blank" rel="noopener" title="Открыть WhatsApp">WhatsApp</a><button class="messenger-btn max" type="button" data-max="'+esc(digits)+'" title="Скопировать номер и открыть MAX">MAX</button></div>':''].filter(Boolean).join('');
-    return '<tr><td>'+esc(c.name)+'<span class="sub">'+esc(c.source||'Источник не указан')+'</span></td><td>'+esc(c.category)+'</td><td class="contact">'+(contact||'—')+'</td><td>'+esc([c.city,c.country].filter(Boolean).join(', ')||'—')+'</td><td>'+badge(c.status)+'</td><td><div class="row-actions"><button class="icon-btn" data-edit="'+c.id+'" title="Редактировать">✎</button><button class="icon-btn" data-delete="'+c.id+'" title="Удалить">×</button></div></td></tr>';
+    const email = c.email ? '<a class="table-action email-action" href="mailto:'+esc(c.email)+'">Почта</a>' : '<span class="no-action">Нет email</span>';
+    const whatsapp = digits ? '<a class="table-action whatsapp-action" href="https://wa.me/'+digits+'" target="_blank" rel="noopener">WhatsApp</a>' : '<span class="no-action">Нет номера</span>';
+    const max = digits ? '<button class="table-action max-action" type="button" data-max="'+esc(digits)+'">MAX</button>' : '<span class="no-action">—</span>';
+    const status = '<select class="status-select" data-status="'+c.id+'" aria-label="Статус компании">'+statuses.map(x=>'<option'+(c.status===x?' selected':'')+'>'+x+'</option>').join('')+'</select>';
+    return '<tr><td class="company-cell"><strong>'+esc(c.name)+'</strong><span class="sub">'+esc([c.category,c.city,c.country].filter(Boolean).join(' · '))+'</span></td><td>'+email+'</td><td>'+whatsapp+'</td><td>'+max+'</td><td>'+status+'</td><td><button class="icon-btn" data-delete="'+c.id+'" title="Удалить компанию">×</button></td></tr>';
   }).join('') || '<tr><td colspan="6" class="empty">Нет компаний по выбранным условиям</td></tr>';
 }
 async function load() {
   try { companies=await request('/api/companies?'+new URLSearchParams(filters())); render(); }
   catch(e) { $('companyRows').innerHTML='<tr><td colspan="6" class="empty">'+esc(e.message)+'</td></tr>'; }
 }
-function openForm(company) {
+function openForm() {
   $('companyForm').reset(); $('formError').textContent='';
-  $('companyId').value=company?.id||'';
-  $('dialogTitle').textContent=company?'Редактировать компанию':'Новая компания';
-  fields.forEach(f=>$(f).value=company?.[f]??(f==='category'?'Автосервис':f==='status'?'Новый':''));
+  $('companyId').value='';
+  $('dialogTitle').textContent='Новая компания';
+  fields.forEach(f=>$(f).value=(f==='category'?'Автосервис':f==='status'?'Новый':''));
   $('companyDialog').showModal();
 }
 function closeForm() { $('companyDialog').close(); }
-$('addBtn').onclick=()=>openForm(); $('emptyAdd').onclick=()=>openForm();
+$('addBtn').onclick=openForm; $('emptyAdd').onclick=openForm;
 $('closeDialog').onclick=closeForm; $('cancelDialog').onclick=closeForm; $('refreshBtn').onclick=load;
 $('companyForm').onsubmit=async e=>{
   e.preventDefault(); $('formError').textContent='';
   const data=Object.fromEntries(fields.map(f=>[f,$(f).value.trim()]));
-  const id=$('companyId').value;
-  try { await request(id?'/api/companies/'+id:'/api/companies',{method:id?'PUT':'POST',body:JSON.stringify(data)}); closeForm(); await load(); }
+  try { await request('/api/companies',{method:'POST',body:JSON.stringify(data)}); closeForm(); await load(); }
   catch(err){$('formError').textContent=err.message;}
 };
 $('companyRows').onclick=async e=>{
-  const edit=e.target.closest('[data-edit]'); const del=e.target.closest('[data-delete]');
-  if(edit){const company=companies.find(c=>String(c.id)===edit.dataset.edit);if(company)openForm(company);}
+  const maxButton=e.target.closest('[data-max]');
+  if(maxButton){
+    const number=maxButton.dataset.max;
+    window.open('https://max.ru/','_blank','noopener');
+    try { await navigator.clipboard.writeText(number); showToast('Номер '+number+' скопирован. В MAX вставьте его в поиск контактов.'); }
+    catch { showToast('Найдите клиента в MAX по номеру: '+number); }
+    return;
+  }
+  const del=e.target.closest('[data-delete]');
   if(del){const c=companies.find(x=>String(x.id)===del.dataset.delete);if(c&&confirm('Удалить компанию «'+c.name+'»?')){try{await request('/api/companies/'+c.id,{method:'DELETE'});await load();}catch(err){alert(err.message);}}}
+};
+$('companyRows').onchange=async e=>{
+  const select=e.target.closest('[data-status]');
+  if(!select)return;
+  const id=select.dataset.status;
+  const newStatus=select.value;
+  select.disabled=true;
+  try {
+    await request('/api/companies/'+id+'/status',{method:'PATCH',body:JSON.stringify({status:newStatus})});
+    const company=companies.find(c=>String(c.id)===id);
+    if(company)company.status=newStatus;
+    render();
+    showToast('Статус сохранён');
+  } catch(err) { alert(err.message); await load(); }
 };
 ['search','countryFilter','cityFilter','categoryFilter','statusFilter'].forEach(id=>{
   $(id).addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(load,250);});
