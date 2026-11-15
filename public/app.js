@@ -11,19 +11,20 @@ async function request(url, options={}) {
   return response.status===204 ? null : response.json();
 }
 function phoneNumbers(value) {
-  return String(value || '').split(/[;,\\n]+/).map(s => s.trim()).filter(Boolean);
+  return String(value || '').split(/[;,\n]+/).map(s => s.trim()).filter(Boolean);
 }
 function phoneForMessenger(value) {
   const first = phoneNumbers(value)[0] || '';
-  let digits = first.replace(/\\D/g, '');
+  let digits = first.replace(/\D/g, '');
   if (digits.length === 11 && digits[0] === '8') digits = '7' + digits.slice(1);
+  if (digits.length === 10) digits = '7' + digits;
   return digits;
 }
 function phoneLinks(value) {
   const numbers = phoneNumbers(value);
   if (!numbers.length) return '<span class="no-action">Нет номера</span>';
   return numbers.map(number => {
-    const tel = number.replace(/[^+\\d]/g, '');
+    const tel = number.replace(/[^\d+]/g, '');
     return '<a class="table-action phone-action" href="tel:'+esc(tel)+'">'+esc(number)+'</a>';
   }).join('<br>');
 }
@@ -104,8 +105,9 @@ function render() {
     const whatsapp = digits ? '<a class="table-action whatsapp-action" href="https://wa.me/'+digits+'" target="_blank" rel="noopener">WhatsApp</a>' : '<span class="no-action">Нет номера</span>';
     const max = digits ? '<button class="table-action max-action" type="button" data-max="'+esc(digits)+'">MAX</button>' : '<span class="no-action">—</span>';
     const status = '<select class="status-select" data-status="'+c.id+'" aria-label="Статус компании">'+statuses.map(x=>'<option'+(c.status===x?' selected':'')+'>'+x+'</option>').join('')+'</select>';
-    const companyQuery = encodeURIComponent(c.name || '');
-    const companySearch = '<div class="company-search"><a class="search-company yandex-search" href="https://yandex.ru/search/?text='+companyQuery+'" target="_blank" rel="noopener" aria-label="Найти '+esc(c.name)+' в Яндексе">Яндекс</a><a class="search-company gis-search" href="https://2gis.ru/search/'+companyQuery+'" target="_blank" rel="noopener" aria-label="Найти '+esc(c.name)+' в 2ГИС">2ГИС</a></div>';
+    const searchText = [c.name, c.city, c.country].filter(Boolean).join(' ');
+    const companyQuery = encodeURIComponent(searchText);
+    const companySearch = '<div class="company-search"><a class="search-company yandex-search" href="https://yandex.ru/maps/?text='+companyQuery+'" target="_blank" rel="noopener noreferrer" aria-label="Найти '+esc(c.name)+' в Яндекс Картах">Яндекс</a><a class="search-company gis-search" href="https://2gis.ru/search/'+companyQuery+'" target="_blank" rel="noopener noreferrer" aria-label="Найти '+esc(c.name)+' в 2ГИС">2ГИС</a></div>';
     return '<tr><td class="company-cell"><strong>'+esc(c.name)+'</strong>'+companySearch+'<span class="sub">'+esc([c.category,c.city,c.country].filter(Boolean).join(' · '))+'</span></td><td>'+phones+'</td><td>'+email+'</td><td>'+whatsapp+'</td><td>'+max+'</td><td>'+status+'</td><td><button class="icon-btn" data-delete="'+c.id+'" title="Удалить компанию">×</button></td></tr>';
   }).join('') || '<tr><td colspan="7" class="empty">Нет компаний по выбранным условиям</td></tr>';
 }
