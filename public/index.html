@@ -33,7 +33,7 @@
           <select id="categoryFilter"><option value="">Все направления</option><option>Клининг</option><option>Автосервис</option><option>Другое</option></select>
           <select id="statusFilter"><option value="">Все статусы</option><option>Новый</option><option>Письмо подготовлено</option><option>Связались</option><option>Ответили</option><option>Не подходит</option></select>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>КОМПАНИЯ</th><th>НАПРАВЛЕНИЕ</th><th>КОНТАКТЫ</th><th>ГОРОД / СТРАНА</th><th>СТАТУС</th><th></th></tr></thead><tbody id="companyRows"><tr><td colspan="6" class="empty">Загрузка…</td></tr></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>КОМПАНИЯ</th><th>ПОЧТА</th><th>МЕССЕНДЖЕР 1</th><th>МЕССЕНДЖЕР 2</th><th>СТАТУС</th><th></th></tr></thead><tbody id="companyRows"><tr><td colspan="6" class="empty">Загрузка…</td></tr></tbody></table></div>
         <div id="emptyState" class="empty-state" hidden><div class="empty-icon">▤</div><b>Пока нет компаний</b><p>Добавьте первую компанию, чтобы начать вести базу лидов.</p><button class="primary" id="emptyAdd">＋ Добавить компанию</button></div>
         <div class="table-foot"><span id="resultCount">0 записей</span><span>Данные сохраняются в базе приложения</span></div>
       </section>
@@ -42,7 +42,7 @@
   </div>
   <dialog id="companyDialog">
     <form id="companyForm">
-      <div class="dialog-head"><div><span class="eyebrow">КАРТОЧКА ЛИДА</span><h2 id="dialogTitle">Новая компания</h2></div><button type="button" class="close" id="closeDialog">×</button></div>
+      <div class="dialog-head"><div><span class="eyebrow">ДОБАВЛЕНИЕ В БАЗУ</span><h2 id="dialogTitle">Новая компания</h2></div><button type="button" class="close" id="closeDialog">×</button></div>
       <input type="hidden" id="companyId">
       <div class="form-grid">
         <label class="wide">Название компании *<input id="name" required maxlength="180" placeholder="Например, АвтоМастер"></label>
