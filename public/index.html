@@ -17,7 +17,7 @@
       <div class="sidebar-bottom">Версия 1.0 · Beta</div>
     </aside>
     <main class="main">
-      <header class="topbar"><div><span class="eyebrow">ВАША БАЗА КЛИЕНТОВ</span><h1>Компании</h1></div><button id="addBtn" class="primary">＋ Добавить компанию</button></header>
+      <header class="topbar"><div><span class="eyebrow">ВАША БАЗА КЛИЕНТОВ</span><h1>Компании</h1></div><div class="topbar-actions"><button id="cleaningOfferBtn" class="secondary offer-cleaning">КП · Клининг</button><button id="autoOfferBtn" class="secondary offer-auto">КП · Автосервис</button><button id="addBtn" class="primary">＋ Добавить компанию</button></div></header>
       <section class="stats">
         <article class="stat"><span>Всего компаний</span><strong id="totalCount">0</strong><small>В вашей базе</small></article>
         <article class="stat"><span>Новые</span><strong id="newCount">0</strong><small>Ожидают контакта</small></article>
@@ -40,6 +40,20 @@
       <footer>Business Leads Platform <span>·</span> Инструмент для работы с потенциальными клиентами</footer>
     </main>
   </div>
+  <dialog id="offerDialog" class="offer-dialog">
+    <form id="offerForm">
+      <div class="dialog-head"><div><span class="eyebrow">ШАБЛОНЫ ДЛЯ РАССЫЛКИ</span><h2 id="offerDialogTitle">Коммерческое предложение</h2><p class="offer-hint">Тексты можно редактировать. Изменения сохраняются в этом браузере.</p></div><button type="button" class="close" id="closeOfferDialog">×</button></div>
+      <input type="hidden" id="offerType">
+      <div class="offer-fields">
+        <label>Текст коммерческого предложения<textarea id="offerText" rows="9"></textarea></label>
+        <label>Тема письма<input id="emailSubject" maxlength="180"></label>
+        <label>Шаблон письма<textarea id="emailBody" rows="7"></textarea></label>
+      </div>
+      <p class="offer-hint">Переменные: {Компания} и {Город} — их можно оставить в шаблоне и заменить перед отправкой.</p>
+      <p id="offerSaved" class="offer-saved" aria-live="polite"></p>
+      <div class="dialog-actions offer-actions"><button type="button" class="secondary" id="copyOfferBtn">Скопировать КП</button><button type="button" class="secondary" id="copyEmailBtn">Скопировать письмо</button><button type="button" class="primary" id="saveOfferBtn">Сохранить шаблон</button></div>
+    </form>
+  </dialog>
   <dialog id="companyDialog">
     <form id="companyForm">
       <div class="dialog-head"><div><span class="eyebrow">ДОБАВЛЕНИЕ В БАЗУ</span><h2 id="dialogTitle">Новая компания</h2></div><button type="button" class="close" id="closeDialog">×</button></div>
