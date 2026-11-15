@@ -89,7 +89,7 @@ $('autoOfferBtn').onclick = () => openOffer('auto');
 $('closeOfferDialog').onclick = () => $('offerDialog').close();
 $('saveOfferBtn').onclick = saveOffer;
 $('copyOfferBtn').onclick = () => copyText($('offerText').value, 'КП');
-$('copyEmailBtn').onclick = () => copyText('Тема: ' + $('emailSubject').value + '\\n\\n' + $('emailBody').value, 'Шаблон письма');
+$('copyEmailBtn').onclick = () => copyText('Тема: ' + $('emailSubject').value + '\n\n' + $('emailBody').value, 'Шаблон письма');
 function render() {
   $('totalCount').textContent=companies.length;
   $('newCount').textContent=companies.filter(c=>c.status==='Новый').length;
