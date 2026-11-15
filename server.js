@@ -96,6 +96,20 @@ app.post('/api/companies', async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Не удалось сохранить компанию' }); }
 });
 
+app.patch('/api/companies/:id/status', async (req, res) => {
+  try {
+    const allowed = ['Новый','Письмо подготовлено','Связались','Ответили','Не подходит'];
+    const status = String((req.body || {}).status || '');
+    if (!allowed.includes(status)) return res.status(400).json({ error: 'Недопустимый статус' });
+    const result = await pool.query(
+      'UPDATE companies SET status=$1,updated_at=NOW() WHERE id=$2 RETURNING *',
+      [status, req.params.id]
+    );
+    if (!result.rowCount) return res.status(404).json({ error: 'Компания не найдена' });
+    res.json(result.rows[0]);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Не удалось изменить статус' }); }
+});
+
 app.put('/api/companies/:id', async (req, res) => {
   try {
     const d = req.body || {};
