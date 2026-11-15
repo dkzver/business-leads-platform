@@ -40,7 +40,8 @@ function render() {
   $('resultCount').textContent=companies.length+' записей';
   $('emptyState').hidden=companies.length!==0;
   $('companyRows').innerHTML=companies.map(c=>{
-    const digits = phoneForMessenger(c.phone);\n    const contact=[c.phone?'<span>'+esc(c.phone)+'</span>':'',c.email?'<a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a>':'',c.website?'<a href="'+esc(c.website)+'" target="_blank" rel="noopener">Сайт ↗</a>':'',digits?'<div class="messenger-actions"><a class="messenger-btn whatsapp" href="https://wa.me/'+digits+'" target="_blank" rel="noopener" title="Открыть WhatsApp">WhatsApp</a><button class="messenger-btn max" type="button" data-max="'+esc(digits)+'" title="Скопировать номер и открыть MAX">MAX</button></div>':''].filter(Boolean).join('');
+    const digits = phoneForMessenger(c.phone);
+    const contact=[c.phone?'<span>'+esc(c.phone)+'</span>':'',c.email?'<a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a>':'',c.website?'<a href="'+esc(c.website)+'" target="_blank" rel="noopener">Сайт ↗</a>':'',digits?'<div class="messenger-actions"><a class="messenger-btn whatsapp" href="https://wa.me/'+digits+'" target="_blank" rel="noopener" title="Открыть WhatsApp">WhatsApp</a><button class="messenger-btn max" type="button" data-max="'+esc(digits)+'" title="Скопировать номер и открыть MAX">MAX</button></div>':''].filter(Boolean).join('');
     return '<tr><td>'+esc(c.name)+'<span class="sub">'+esc(c.source||'Источник не указан')+'</span></td><td>'+esc(c.category)+'</td><td class="contact">'+(contact||'—')+'</td><td>'+esc([c.city,c.country].filter(Boolean).join(', ')||'—')+'</td><td>'+badge(c.status)+'</td><td><div class="row-actions"><button class="icon-btn" data-edit="'+c.id+'" title="Редактировать">✎</button><button class="icon-btn" data-delete="'+c.id+'" title="Удалить">×</button></div></td></tr>';
   }).join('') || '<tr><td colspan="6" class="empty">Нет компаний по выбранным условиям</td></tr>';
 }
