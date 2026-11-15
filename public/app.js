@@ -10,11 +10,22 @@ async function request(url, options={}) {
   if (!response.ok) { let data={}; try{data=await response.json()}catch{} throw new Error(data.error || 'Ошибка запроса'); }
   return response.status===204 ? null : response.json();
 }
+function phoneNumbers(value) {
+  return String(value || '').split(/[;,\\n]+/).map(s => s.trim()).filter(Boolean);
+}
 function phoneForMessenger(value) {
-  const first = String(value || '').split(/[;,\n]/)[0].trim();
-  let digits = first.replace(/\D/g, '');
+  const first = phoneNumbers(value)[0] || '';
+  let digits = first.replace(/\\D/g, '');
   if (digits.length === 11 && digits[0] === '8') digits = '7' + digits.slice(1);
   return digits;
+}
+function phoneLinks(value) {
+  const numbers = phoneNumbers(value);
+  if (!numbers.length) return '<span class="no-action">Нет номера</span>';
+  return numbers.map(number => {
+    const tel = number.replace(/[^+\\d]/g, '');
+    return '<a class="table-action phone-action" href="tel:'+esc(tel)+'">'+esc(number)+'</a>';
+  }).join('<br>');
 }
 function showToast(message) {
   let toast = document.getElementById('actionToast');
@@ -48,7 +59,7 @@ function render() {
 }
 async function load() {
   try { companies=await request('/api/companies?'+new URLSearchParams(filters())); render(); }
-  catch(e) { $('companyRows').innerHTML='<tr><td colspan="6" class="empty">'+esc(e.message)+'</td></tr>'; }
+  catch(e) { $('companyRows').innerHTML='<tr><td colspan="7" class="empty">'+esc(e.message)+'</td></tr>'; }
 }
 function openForm() {
   $('companyForm').reset(); $('formError').textContent='';
