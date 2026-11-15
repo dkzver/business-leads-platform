@@ -54,7 +54,9 @@ function render() {
     const whatsapp = digits ? '<a class="table-action whatsapp-action" href="https://wa.me/'+digits+'" target="_blank" rel="noopener">WhatsApp</a>' : '<span class="no-action">Нет номера</span>';
     const max = digits ? '<button class="table-action max-action" type="button" data-max="'+esc(digits)+'">MAX</button>' : '<span class="no-action">—</span>';
     const status = '<select class="status-select" data-status="'+c.id+'" aria-label="Статус компании">'+statuses.map(x=>'<option'+(c.status===x?' selected':'')+'>'+x+'</option>').join('')+'</select>';
-    return '<tr><td class="company-cell"><strong>'+esc(c.name)+'</strong><span class="sub">'+esc([c.category,c.city,c.country].filter(Boolean).join(' · '))+'</span></td><td>'+phones+'</td><td>'+email+'</td><td>'+whatsapp+'</td><td>'+max+'</td><td>'+status+'</td><td><button class="icon-btn" data-delete="'+c.id+'" title="Удалить компанию">×</button></td></tr>';
+    const companyQuery = encodeURIComponent(c.name || '');
+    const companySearch = '<div class="company-search"><a class="search-company yandex-search" href="https://yandex.ru/search/?text='+companyQuery+'" target="_blank" rel="noopener" aria-label="Найти '+esc(c.name)+' в Яндексе">Яндекс</a><a class="search-company gis-search" href="https://2gis.ru/search/'+companyQuery+'" target="_blank" rel="noopener" aria-label="Найти '+esc(c.name)+' в 2ГИС">2ГИС</a></div>';
+    return '<tr><td class="company-cell"><strong>'+esc(c.name)+'</strong>'+companySearch+'<span class="sub">'+esc([c.category,c.city,c.country].filter(Boolean).join(' · '))+'</span></td><td>'+phones+'</td><td>'+email+'</td><td>'+whatsapp+'</td><td>'+max+'</td><td>'+status+'</td><td><button class="icon-btn" data-delete="'+c.id+'" title="Удалить компанию">×</button></td></tr>';
   }).join('') || '<tr><td colspan="7" class="empty">Нет компаний по выбранным условиям</td></tr>';
 }
 async function load() {
