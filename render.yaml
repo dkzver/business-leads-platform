@@ -3,9 +3,11 @@ services:
     name: business-leads-platform
     runtime: node
     plan: free
+    region: frankfurt
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /api/health
+    autoDeployTrigger: commit
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -15,5 +17,6 @@ services:
 databases:
   - name: business-leads-db
     plan: free
+    region: frankfurt
     databaseName: business_leads
     user: business_leads_user
