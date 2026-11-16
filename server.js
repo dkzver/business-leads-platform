@@ -204,7 +204,7 @@ app.post('/api/companies/import', async (req,res) => {
   const name=String(d.name||'').trim().slice(0,180);if(!name){invalid++;continue;}
   const country=String(d.country||'').trim().slice(0,120),city=String(d.city||'').trim().slice(0,120);
   const email=String(d.email||'').trim().slice(0,240),website=String(d.website||'').trim().slice(0,500);
-  const site=website.toLowerCase().replace(/^https?:\\/\\//,'').replace(/^www\\./,'').replace(/\\/+$/,'');
+  const site=website.toLowerCase().replace('https://','').replace('http://','').replace('www.','').replace(/\/+$/,'');
   const dup=await client.query("SELECT id FROM companies WHERE (LOWER(name)=LOWER($1) AND LOWER(COALESCE(city,''))=LOWER($2) AND LOWER(COALESCE(country,''))=LOWER($3)) OR ($4<>'' AND LOWER(email)=$4) OR ($5<>'' AND LOWER(RTRIM(REPLACE(REPLACE(REPLACE(website,'https://',''),'http://',''),'www.',''),'/'))=$5) LIMIT 1",[name,city,country,email.toLowerCase(),site]);
   if(dup.rowCount){duplicates++;continue;}
   const allowed=['Новый','Письмо подготовлено','Связались','Ответили','Не подходит'];const status=allowed.includes(String(d.status||''))?String(d.status):'Новый';
