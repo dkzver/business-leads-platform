@@ -9,6 +9,20 @@ if (!process.env.DATABASE_URL) {
   console.error('DATABASE_URL is required. Configure a Render PostgreSQL database.');
   process.exit(1);
 }
+
+const templateCatalog = {
+  cleaning_en: { title: 'Cleaning companies · English', body: 'Hello {{company}},\n\nI am an independent software developer helping businesses improve their websites and internal workflows. I would be glad to learn how your team currently manages incoming requests, scheduling and customer communication.\n\nIf useful, I can suggest a practical website or lightweight web system tailored to your process. Would a short introductory conversation be convenient?\n\nBest regards,\n{{your_name}}' },
+  auto_en: { title: 'Auto repair shops · English', body: 'Hello {{company}},\n\nI build websites and custom web tools for service businesses. For an auto repair shop, this could include online booking, repair-status updates, customer history and simpler management of service requests.\n\nI would be happy to learn how your shop works today and suggest only improvements that could be genuinely useful. Would you be open to a brief conversation?\n\nBest regards,\n{{your_name}}' },
+  website_ru: { title: 'Сайт или интернет-магазин · Русский', body: 'Здравствуйте, команда {{company}}!\n\nЯ независимый разработчик. Создаю современные сайты и интернет-магазины, которые помогают компаниям понятнее представлять услуги, получать обращения и удобнее работать с клиентами.\n\nПосмотрел информацию о вашей компании и хотел бы обсудить, может ли обновление сайта или отдельная веб-функция быть вам полезна. Могу сначала предложить несколько конкретных идей без обязательств.\n\nБудет ли удобно коротко пообщаться?\n\nС уважением,\n{{your_name}}' },
+  website_en: { title: 'Website or online store · English', body: 'Hello {{company}} team,\n\nI am an independent developer building modern websites and online stores that help businesses explain their services clearly, generate enquiries and serve customers more effectively.\n\nI would be glad to discuss whether a website improvement or a focused web feature could be useful for your business. I can start with a few practical ideas, with no obligation.\n\nWould a short conversation be convenient?\n\nBest regards,\n{{your_name}}' },
+  webapp_ru: { title: 'Веб-сервис или личный кабинет · Русский', body: 'Здравствуйте, команда {{company}}!\n\nЯ занимаюсь разработкой веб-сервисов и личных кабинетов под задачи бизнеса. Это могут быть клиентские порталы, системы заявок, кабинеты партнёров, панели управления и внутренние инструменты.\n\nЕсли у вас есть процессы, которые сейчас ведутся вручную или в нескольких разрозненных инструментах, я мог бы предложить вариант их объединения в удобный сервис.\n\nГотов обсудить ваши задачи и предложить небольшой план реализации. Интересно ли вам такое направление?\n\nС уважением,\n{{your_name}}' },
+  webapp_en: { title: 'Web application or client portal · English', body: 'Hello {{company}} team,\n\nI develop custom web applications and portals for business workflows: customer areas, request management, partner portals, admin dashboards and internal tools.\n\nIf some of your processes are still handled manually or across disconnected tools, I would be happy to explore whether a focused web application could simplify them.\n\nWould you be interested in a short discovery call?\n\nBest regards,\n{{your_name}}' },
+  automation_ru: { title: 'Автоматизация и интеграции · Русский', body: 'Здравствуйте, команда {{company}}!\n\nЯ разрабатываю программные решения для автоматизации бизнес-процессов и интеграции используемых сервисов: обмен данными, обработка заявок, уведомления, отчёты и внутренние панели.\n\nХотел бы узнать, есть ли у вас повторяющиеся операции, которые отнимают время сотрудников и которые можно надёжно автоматизировать. Могу предложить идеи после короткого знакомства с процессом.\n\nБудет ли удобно обсудить это?\n\nС уважением,\n{{your_name}}' },
+  automation_en: { title: 'Automation and integrations · English', body: 'Hello {{company}} team,\n\nI build software that automates business workflows and connects existing tools: data synchronisation, enquiry processing, notifications, reporting and internal dashboards.\n\nI would be interested in learning whether your team has repetitive tasks that could be made simpler and more reliable through automation. I can suggest options after a short introduction to your workflow.\n\nWould you be open to a brief conversation?\n\nBest regards,\n{{your_name}}' },
+  mobile_ru: { title: 'Мобильное приложение · Русский', body: 'Здравствуйте, команда {{company}}!\n\nЯ разрабатываю цифровые продукты для бизнеса, в том числе мобильные приложения и связанные с ними серверные сервисы. Это может быть приложение для клиентов, сотрудников, курьеров или партнёров — в зависимости от реальной задачи.\n\nЕсли вы рассматриваете мобильный канал обслуживания или хотите упростить работу команды, буду рад обсудить идею и возможный объём первой версии.\n\nИнтересно ли вам коротко пообщаться?\n\nС уважением,\n{{your_name}}' },
+  mobile_en: { title: 'Mobile application · English', body: 'Hello {{company}} team,\n\nI build digital products for businesses, including mobile applications and their supporting backend services. Depending on the need, this could be an app for customers, employees, delivery teams or partners.\n\nIf you are considering a mobile customer channel or a better tool for your team, I would be glad to discuss the idea and a realistic first version.\n\nWould a short conversation be useful?\n\nBest regards,\n{{your_name}}' }
+};
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false }
@@ -57,6 +71,12 @@ async function initDb() {
     'INSERT INTO message_templates (type,title,body) VALUES ($1,$2,$3),($4,$5,$6) ON CONFLICT (type) DO NOTHING',
     ['cleaning','Текст для клининговых компаний',"Здравствуйте!\n\nЯ занимаюсь разработкой программного обеспечения и сейчас изучаю процессы управления клининговыми компаниями.\n\nПланирую создать SaaS-платформу для автоматизации работы клининга:\n\n— Приём и обработка заявок.\n— Распределение заказов между сотрудниками.\n— Управление персоналом.\n— Календарь уборок.\n— Контроль выхода сотрудников на объекты.\n— Контроль выполнения заказов.\n\nСейчас я не пытаюсь ничего продать. Мне важно понять, какие проблемы действительно возникают у клининговых компаний и какие процессы стоит автоматизировать.\n\nБуду благодарен, если вы сможете уделить 15–20 минут на короткую беседу.\n\nВзамен готов учесть ваши пожелания при разработке платформы.\n\nС уважением,\nКирилл Циркунов\nТелефон: +7 931 450-19-92\nEmail: dkrstudio@gmail.com",'auto','Текст для автосервисов',"Здравствуйте!\n\nЯ занимаюсь разработкой программного обеспечения и сейчас изучаю возможности создания SaaS-платформы для автосервисов.\n\nИдея проекта — создать единую систему управления автосервисом, которая позволит:\n\n• Принимать и учитывать заявки клиентов.\n• Вести календарь записей на ремонт и обслуживание.\n• Управлять загрузкой сотрудников и ремонтных постов.\n• Распределять заказы между свободными мастерами.\n• Вести историю обслуживания автомобилей и клиентов.\n• Контролировать этапы выполнения ремонтных работ.\n• Учитывать запчасти и расходные материалы.\n• Получать отчёты о работе автосервиса.\n\nЦель — уменьшить количество ручной работы, упростить управление сотрудниками и заказами, сделать загрузку мастеров и состояние каждого ремонта более прозрачными.\n\nСейчас я изучаю потребности автосервисов и ищу владельцев, готовых поделиться опытом и обсудить, какие функции действительно были бы полезны их бизнесу.\n\nМне интересно узнать, как сегодня организована работа вашего автосервиса, какие процессы отнимают больше всего времени и что вы хотели бы автоматизировать в первую очередь.\n\nБуду благодарен за возможность задать несколько вопросов и узнать ваше мнение. Это поможет сформировать продукт, который будет решать реальные задачи автосервисов.\n\nС уважением,\nКирилл Циркунов\nТелефон: +7 931 450-19-92\nEmail: dkrstudio@gmail.com"]
   );
+  for (const [type, template] of Object.entries(templateCatalog)) {
+    await pool.query(
+      'INSERT INTO message_templates (type,title,body) VALUES ($1,$2,$3) ON CONFLICT (type) DO NOTHING',
+      [type, template.title, template.body]
+    );
+  }
 }
 
 app.get('/api/health', async (_req, res) => {
@@ -64,9 +84,16 @@ app.get('/api/health', async (_req, res) => {
   catch { res.status(503).json({ ok: false }); }
 });
 
+app.get('/api/templates', async (_req, res) => {
+  try {
+    const result = await pool.query('SELECT type,title,body,updated_at FROM message_templates ORDER BY title');
+    res.json(result.rows);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Не удалось загрузить шаблоны' }); }
+});
+
 app.get('/api/templates/:type', async (req, res) => {
   try {
-    if (!['cleaning','auto'].includes(req.params.type)) return res.status(400).json({ error: 'Неизвестный тип текста' });
+    if (!templateCatalog[req.params.type] && !['cleaning','auto'].includes(req.params.type)) return res.status(400).json({ error: 'Неизвестный тип текста' });
     const result = await pool.query('SELECT type,title,body,updated_at FROM message_templates WHERE type=$1', [req.params.type]);
     if (!result.rowCount) return res.status(404).json({ error: 'Текст не найден' });
     res.json(result.rows[0]);
@@ -75,10 +102,10 @@ app.get('/api/templates/:type', async (req, res) => {
 
 app.put('/api/templates/:type', async (req, res) => {
   try {
-    if (!['cleaning','auto'].includes(req.params.type)) return res.status(400).json({ error: 'Неизвестный тип текста' });
+    if (!templateCatalog[req.params.type] && !['cleaning','auto'].includes(req.params.type)) return res.status(400).json({ error: 'Неизвестный тип текста' });
     const body = String((req.body || {}).body || '');
     if (!body.trim()) return res.status(400).json({ error: 'Текст не может быть пустым' });
-    const title = req.params.type === 'cleaning' ? 'Текст для клининговых компаний' : 'Текст для автосервисов';
+    const title = templateCatalog[req.params.type]?.title || (req.params.type === 'cleaning' ? 'Текст для клининговых компаний' : 'Текст для автосервисов');
     const result = await pool.query(
       'INSERT INTO message_templates (type,title,body,updated_at) VALUES ($1,$2,$3,NOW()) ON CONFLICT (type) DO UPDATE SET body=EXCLUDED.body,title=EXCLUDED.title,updated_at=NOW() RETURNING type,title,body,updated_at',
       [req.params.type,title,body]

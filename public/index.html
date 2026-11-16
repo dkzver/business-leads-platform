@@ -17,7 +17,7 @@
       <div class="sidebar-bottom">Версия 1.0 · Beta</div>
     </aside>
     <main class="main">
-      <header class="topbar"><div><span class="eyebrow">ВАША БАЗА КЛИЕНТОВ</span><h1>Компании</h1></div><div class="topbar-actions"><button id="cleaningOfferBtn" class="secondary offer-cleaning">КП · Клининг</button><button id="autoOfferBtn" class="secondary offer-auto">КП · Автосервис</button><button id="addBtn" class="primary">＋ Добавить компанию</button></div></header>
+      <header class="topbar"><div><span class="eyebrow">ВАША БАЗА КЛИЕНТОВ</span><h1>Компании</h1></div><div class="topbar-actions"><button id="exportBtn" class="secondary">Экспорт CSV</button><button id="outreachBtn" class="secondary">✉ Создать предложение</button><button id="addBtn" class="primary">＋ Добавить компанию</button></div></header>
       <section class="stats">
         <article class="stat"><span>Всего компаний</span><strong id="totalCount">0</strong><small>В вашей базе</small></article>
         <article class="stat"><span>Новые</span><strong id="newCount">0</strong><small>Ожидают контакта</small></article>
@@ -67,6 +67,22 @@
       </div>
       <p id="formError" class="error" role="alert"></p>
       <div class="dialog-actions"><button type="button" class="secondary" id="cancelDialog">Отмена</button><button class="primary" type="submit">Сохранить компанию</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="outreachDialog" class="offer-dialog">
+    <form id="outreachForm">
+      <div class="dialog-head"><div><span class="eyebrow">FREELANCE OUTREACH CRM</span><h2>Персональное предложение</h2><p class="offer-hint">Выберите компанию и услугу, проверьте текст и отправьте вручную через свою почту.</p></div><button type="button" class="close" id="closeOutreach">×</button></div>
+      <div class="form-grid">
+        <label>Компания<select id="outreachCompany"></select></label>
+        <label>Язык<select id="outreachLanguage"><option value="ru">Русский</option><option value="en">English</option></select></label>
+        <label class="wide">Тип предложения<select id="outreachType"><option value="website">Сайт / Website</option><option value="webapp">Веб-сервис / Web application</option><option value="automation">Автоматизация / Automation</option><option value="mobile">Мобильное приложение / Mobile app</option><option value="cleaning">Клининг / Cleaning</option><option value="auto">Автосервис / Auto repair</option></select></label>
+        <label class="wide">Ваше имя<input id="outreachName" value="Кирилл Циркунов"></label>
+        <label class="wide">Тема письма<input id="outreachSubject" value="Идея для улучшения цифровых процессов"></label>
+        <label class="wide">Текст предложения<textarea id="outreachBody" rows="14"></textarea></label>
+      </div>
+      <p id="outreachMessage" class="offer-saved" aria-live="polite"></p>
+      <div class="dialog-actions"><button type="button" class="secondary" id="copyOutreach">Скопировать текст</button><button type="button" class="primary" id="emailOutreach">Открыть письмо в почте</button></div>
     </form>
   </dialog>
   <script src="/app.js"></script>
