@@ -100,7 +100,7 @@ function render() {
   $('emptyState').hidden=companies.length!==0;
   $('companyRows').innerHTML=companies.map(c=>{
     const digits = phoneForMessenger(c.phone);
-    const email = '<div class="email-cell">'+(c.email ? '<a class="table-action email-action" href="mailto:'+esc(c.email)+'">Почта</a>' : '<span class="no-action">Нет email</span>')+'<button class="table-action edit-email-action" type="button" data-edit="'+c.id+'">'+(c.email ? 'Изменить email' : 'Добавить email')+'</button></div>';
+    const email = '<div class="email-cell">'+(c.email ? '<a class="table-action email-action" href="mailto:'+esc(c.email)+'">Почта</a>' : '<span class="no-action">Нет email</span>')+'<button class="table-action edit-email-action" type="button" data-edit="'+c.id+'">Изменить email</button></div>';
     const phones = phoneLinks(c.phone);
     const whatsapp = digits ? '<a class="table-action whatsapp-action" href="https://wa.me/'+digits+'" target="_blank" rel="noopener">WhatsApp</a>' : '<span class="no-action">Нет номера</span>';
     const max = digits ? '<button class="table-action max-action" type="button" data-max="'+esc(digits)+'">MAX</button>' : '<span class="no-action">—</span>';
