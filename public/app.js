@@ -115,11 +115,11 @@ async function load() {
   try { companies=await request('/api/companies?'+new URLSearchParams(filters())); render(); }
   catch(e) { $('companyRows').innerHTML='<tr><td colspan="7" class="empty">'+esc(e.message)+'</td></tr>'; }
 }
-function openForm() {
+function openForm(company=null) {
   $('companyForm').reset(); $('formError').textContent='';
-  $('companyId').value='';
-  $('dialogTitle').textContent='Новая компания';
-  fields.forEach(f=>$(f).value=(f==='category'?'Автосервис':f==='status'?'Новый':''));
+  $('companyId').value=company?.id || '';
+  $('dialogTitle').textContent=company?'Изменить компанию':'Новая компания';
+  fields.forEach(f=>$(f).value=company ? (company[f] ?? '') : (f==='category'?'Автосервис':f==='status'?'Новый':''));
   $('companyDialog').showModal();
 }
 function closeForm() { $('companyDialog').close(); }
@@ -128,7 +128,7 @@ $('closeDialog').onclick=closeForm; $('cancelDialog').onclick=closeForm; $('refr
 $('companyForm').onsubmit=async e=>{
   e.preventDefault(); $('formError').textContent='';
   const data=Object.fromEntries(fields.map(f=>[f,$(f).value.trim()]));
-  try { await request('/api/companies',{method:'POST',body:JSON.stringify(data)}); closeForm(); await load(); }
+  try { const id=$('companyId').value; await request(id?'/api/companies/'+id:'/api/companies',{method:id?'PUT':'POST',body:JSON.stringify(data)}); closeForm(); await load(); showToast(id?'Данные клиента обновлены':'Компания добавлена'); }
   catch(err){$('formError').textContent=err.message;}
 };
 $('companyRows').onclick=async e=>{
@@ -140,6 +140,8 @@ $('companyRows').onclick=async e=>{
     catch { showToast('Найдите клиента в MAX по номеру: '+number); }
     return;
   }
+  const edit=e.target.closest('[data-edit]');
+  if(edit){const company=companies.find(x=>String(x.id)===edit.dataset.edit);if(company)openForm(company);return;}
   const del=e.target.closest('[data-delete]');
   if(del){const c=companies.find(x=>String(x.id)===del.dataset.delete);if(c&&confirm('Удалить компанию «'+c.name+'»?')){try{await request('/api/companies/'+c.id,{method:'DELETE'});await load();}catch(err){alert(err.message);}}}
 };
