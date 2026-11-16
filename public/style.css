@@ -41,3 +41,9 @@
 .offer-actions{flex-wrap:wrap}
 @media(max-width:850px){.topbar{align-items:flex-start}.topbar-actions{max-width:65%}}
 @media(max-width:650px){.topbar{flex-direction:column}.topbar-actions{max-width:100%;width:100%;justify-content:flex-start}.topbar-actions button{font-size:10px;padding:9px 10px}.offer-dialog form{padding:17px}.offer-actions button{flex:1}.offer-dialog .dialog-head h2{font-size:17px}}
+
+
+/* Explicit email editing action in the company table */
+.email-cell{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:130px}
+.edit-email-action{background:#fff4df;color:#94600b;border:1px solid #f2dfb9}
+.edit-email-action:hover{background:#ffedc8}
