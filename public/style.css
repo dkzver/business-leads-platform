@@ -47,3 +47,11 @@
 .email-cell{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:130px}
 .edit-email-action{background:#fff4df;color:#94600b;border:1px solid #f2dfb9}
 .edit-email-action:hover{background:#ffedc8}
+
+.audit-action{display:flex;margin-top:7px;background:#eef1ff;color:#4d5ed1;border:1px solid #dfe5ff}
+.audit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 16px}
+.audit-grid label{display:flex;align-items:center;gap:8px;border:1px solid #e7ebf2;border-radius:7px;padding:10px;color:#46536a;font-size:11px}
+.audit-grid input{accent-color:#5868e9}
+.audit-score{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:8px;background:#f5f6fb;margin-bottom:15px;color:#69758a;font-size:11px}
+.audit-score strong{font:800 20px Manrope;color:#5868e9}
+@media(max-width:600px){.audit-grid{grid-template-columns:1fr}}
