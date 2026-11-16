@@ -46,12 +46,45 @@ async function initDb() {
     );
     CREATE INDEX IF NOT EXISTS companies_name_idx ON companies (LOWER(name));
     CREATE INDEX IF NOT EXISTS companies_city_idx ON companies (LOWER(city));
+    CREATE TABLE IF NOT EXISTS message_templates (
+      type TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
+  await pool.query(
+    'INSERT INTO message_templates (type,title,body) VALUES ($1,$2,$3),($4,$5,$6) ON CONFLICT (type) DO NOTHING',
+    ['cleaning','Текст для клининговых компаний',"Здравствуйте!\n\nЯ занимаюсь разработкой программного обеспечения и сейчас изучаю процессы управления клининговыми компаниями.\n\nПланирую создать SaaS-платформу для автоматизации работы клининга:\n\n— Приём и обработка заявок.\n— Распределение заказов между сотрудниками.\n— Управление персоналом.\n— Календарь уборок.\n— Контроль выхода сотрудников на объекты.\n— Контроль выполнения заказов.\n\nСейчас я не пытаюсь ничего продать. Мне важно понять, какие проблемы действительно возникают у клининговых компаний и какие процессы стоит автоматизировать.\n\nБуду благодарен, если вы сможете уделить 15–20 минут на короткую беседу.\n\nВзамен готов учесть ваши пожелания при разработке платформы.\n\nС уважением,\nКирилл Циркунов\nТелефон: +7 931 450-19-92\nEmail: dkrstudio@gmail.com",'auto','Текст для автосервисов',"Здравствуйте!\n\nЯ занимаюсь разработкой программного обеспечения и сейчас изучаю возможности создания SaaS-платформы для автосервисов.\n\nИдея проекта — создать единую систему управления автосервисом, которая позволит:\n\n• Принимать и учитывать заявки клиентов.\n• Вести календарь записей на ремонт и обслуживание.\n• Управлять загрузкой сотрудников и ремонтных постов.\n• Распределять заказы между свободными мастерами.\n• Вести историю обслуживания автомобилей и клиентов.\n• Контролировать этапы выполнения ремонтных работ.\n• Учитывать запчасти и расходные материалы.\n• Получать отчёты о работе автосервиса.\n\nЦель — уменьшить количество ручной работы, упростить управление сотрудниками и заказами, сделать загрузку мастеров и состояние каждого ремонта более прозрачными.\n\nСейчас я изучаю потребности автосервисов и ищу владельцев, готовых поделиться опытом и обсудить, какие функции действительно были бы полезны их бизнесу.\n\nМне интересно узнать, как сегодня организована работа вашего автосервиса, какие процессы отнимают больше всего времени и что вы хотели бы автоматизировать в первую очередь.\n\nБуду благодарен за возможность задать несколько вопросов и узнать ваше мнение. Это поможет сформировать продукт, который будет решать реальные задачи автосервисов.\n\nС уважением,\nКирилл Циркунов\nТелефон: +7 931 450-19-92\nEmail: dkrstudio@gmail.com"]
+  );
 }
 
 app.get('/api/health', async (_req, res) => {
   try { await pool.query('SELECT 1'); res.json({ ok: true }); }
   catch { res.status(503).json({ ok: false }); }
+});
+
+app.get('/api/templates/:type', async (req, res) => {
+  try {
+    if (!['cleaning','auto'].includes(req.params.type)) return res.status(400).json({ error: 'Неизвестный тип текста' });
+    const result = await pool.query('SELECT type,title,body,updated_at FROM message_templates WHERE type=$1', [req.params.type]);
+    if (!result.rowCount) return res.status(404).json({ error: 'Текст не найден' });
+    res.json(result.rows[0]);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Не удалось загрузить текст' }); }
+});
+
+app.put('/api/templates/:type', async (req, res) => {
+  try {
+    if (!['cleaning','auto'].includes(req.params.type)) return res.status(400).json({ error: 'Неизвестный тип текста' });
+    const body = String((req.body || {}).body || '');
+    if (!body.trim()) return res.status(400).json({ error: 'Текст не может быть пустым' });
+    const title = req.params.type === 'cleaning' ? 'Текст для клининговых компаний' : 'Текст для автосервисов';
+    const result = await pool.query(
+      'INSERT INTO message_templates (type,title,body,updated_at) VALUES ($1,$2,$3,NOW()) ON CONFLICT (type) DO UPDATE SET body=EXCLUDED.body,title=EXCLUDED.title,updated_at=NOW() RETURNING type,title,body,updated_at',
+      [req.params.type,title,body]
+    );
+    res.json(result.rows[0]);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Не удалось сохранить текст' }); }
 });
 
 app.get('/api/companies', async (req, res) => {
