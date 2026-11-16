@@ -41,45 +41,33 @@ function showToast(message) {
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => toast.classList.remove('visible'), 4200);
 }
-const offerDefaults = {
-  cleaning: {
-    title: 'Коммерческое предложение · SaaS-платформа для клининга',
-    offer: "Здравствуйте!\\n\\nСейчас изучаем, как клининговые компании организуют работу с заявками, клиентами и сотрудниками, и какие задачи чаще всего отнимают у руководителя время.\\n\\nМы занимаемся разработкой программных решений для бизнеса и хотим сначала разобраться в реальных потребностях вашей компании. Возможно, часть повседневных процессов можно упростить с помощью удобной собственной системы: например, вести заявки и клиентскую базу в одном месте, планировать уборки, распределять задания между бригадами и отслеживать выполнение заказов.\\n\\nНе хотим предлагать лишние функции — сначала важно понять, как всё устроено у вас и что действительно было бы полезно. Если тема вам интересна, можно задать несколько коротких вопросов о работе компании?\\n\\nСпасибо!\\n[Ваше имя]\\n[Компания]\\n[Телефон]",
-    subject: 'Разработка SaaS-платформы для клининговой компании {Компания}',
-    email: "Здравствуйте!\\n\\nИзучаем, как клининговые компании ведут заявки, клиентскую базу, планируют уборки и координируют сотрудников. Хотим понять, какие процессы отнимают больше всего времени и что хотелось бы упростить.\\n\\nМы разрабатываем программные решения для бизнеса. На основе реальных потребностей можем предложить удобную систему для управления заявками, клиентами, графиком и работой бригад — без лишних функций, только то, что действительно нужно вашей компании.\\n\\nБудет ли вам удобно коротко рассказать, как сейчас организованы эти процессы?\\n\\nС уважением,\\n[Ваше имя]\\n[Телефон]"
-  },
-  auto: {
-    title: 'Коммерческое предложение · SaaS-платформа для автосервиса',
-    offer: "Здравствуйте!\\n\\nСейчас изучаем, как небольшие автосервисы организуют запись клиентов, учёт автомобилей, заказ-наряды и загрузку мастеров. Хотим понять, какие рабочие задачи чаще всего отнимают время у владельца или администратора СТО.\\n\\nМы занимаемся разработкой программных решений для бизнеса. Возможно, некоторые процессы вашего автосервиса можно упростить с помощью собственной системы: вести записи и историю обслуживания, контролировать статусы работ, хранить информацию о клиентах и автомобилях, планировать загрузку постов.\\n\\nНо сначала важно разобраться в вашей реальной работе, а не предлагать ненужный продукт. Если вы не против, можно задать несколько коротких вопросов о том, как сейчас устроена работа сервиса?\\n\\nСпасибо!\\n[Ваше имя]\\n[Компания]\\n[Телефон]",
-    subject: 'Разработка SaaS-системы для автосервиса {Компания}',
-    email: "Здравствуйте!\\n\\nИзучаем, как небольшие автосервисы ведут запись клиентов, учитывают автомобили и заказ-наряды, контролируют ход работ и планируют загрузку мастеров. Хотим понять, какие процессы неудобны или требуют больше всего ручной работы.\\n\\nМы разрабатываем программные решения для бизнеса и рассматриваем возможность создания систем под реальные задачи СТО: запись, клиентская база, история обслуживания, статусы ремонта и загрузка постов. Сначала хотели бы узнать, что действительно было бы полезно вашему сервису.\\n\\nПодскажите, можно ли задать вам несколько коротких вопросов о текущих процессах?\\n\\nС уважением,\\n[Ваше имя]\\n[Телефон]"
-  }
-};
-function readOfferTemplates() {
-  try { return {...offerDefaults, ...JSON.parse(localStorage.getItem('businessLeadOfferTemplatesV2') || '{}')}; }
-  catch { return {...offerDefaults}; }
-}
-let offerTemplates = readOfferTemplates();
-function openOffer(type) {
-  const data = offerTemplates[type] || offerDefaults[type];
+const offerTitles = { cleaning: 'Текст для клининговых компаний', auto: 'Текст для автосервисов' };
+async function openOffer(type) {
   $('offerType').value = type;
-  $('offerDialogTitle').textContent = data.title;
-  $('offerText').value = data.offer;
-  $('emailSubject').value = data.subject;
-  $('emailBody').value = data.email;
+  $('offerDialogTitle').textContent = offerTitles[type];
+  $('offerText').value = 'Загрузка текста из базы данных…';
+  $('offerText').disabled = true;
   $('offerSaved').textContent = '';
   $('offerDialog').showModal();
+  try {
+    const data = await request('/api/templates/' + type);
+    $('offerText').value = data.body;
+  } catch (err) {
+    $('offerText').value = '';
+    $('offerSaved').textContent = err.message;
+  } finally {
+    $('offerText').disabled = false;
+  }
 }
-function saveOffer() {
+async function saveOffer() {
   const type = $('offerType').value;
-  offerTemplates[type] = {
-    title: offerDefaults[type].title,
-    offer: $('offerText').value,
-    subject: $('emailSubject').value,
-    email: $('emailBody').value
-  };
-  localStorage.setItem('businessLeadOfferTemplatesV2', JSON.stringify(offerTemplates));
-  $('offerSaved').textContent = 'Шаблон сохранён в этом браузере.';
+  try {
+    const data = await request('/api/templates/' + type, { method: 'PUT', body: JSON.stringify({ body: $('offerText').value }) });
+    $('offerText').value = data.body;
+    $('offerSaved').textContent = 'Сохранено в базе данных. Этот текст будет доступен с любого устройства.';
+  } catch (err) {
+    $('offerSaved').textContent = err.message;
+  }
 }
 async function copyText(value, label) {
   try { await navigator.clipboard.writeText(value); showToast(label + ' скопировано'); }
@@ -89,8 +77,7 @@ $('cleaningOfferBtn').onclick = () => openOffer('cleaning');
 $('autoOfferBtn').onclick = () => openOffer('auto');
 $('closeOfferDialog').onclick = () => $('offerDialog').close();
 $('saveOfferBtn').onclick = saveOffer;
-$('copyOfferBtn').onclick = () => copyText($('offerText').value, 'КП');
-$('copyEmailBtn').onclick = () => copyText('Тема: ' + $('emailSubject').value + '\n\n' + $('emailBody').value, 'Шаблон письма');
+$('copyOfferBtn').onclick = () => copyText($('offerText').value, 'Текст');
 function render() {
   $('totalCount').textContent=companies.length;
   $('newCount').textContent=companies.filter(c=>c.status==='Новый').length;
