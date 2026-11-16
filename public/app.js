@@ -200,12 +200,13 @@ $('exportBtn').onclick = () => {
 
 function parseCsv(text) {
   const rows=[]; let row=[], field='', quoted=false;
+  const firstLine=String(text).split(/\\r?\\n/,1)[0]||'';
+  const delimiter=(firstLine.split(';').length>firstLine.split(',').length)?';':',';
   for(let i=0;i<text.length;i++){
     const ch=text[i];
     if(quoted){ if(ch==='"' && text[i+1]==='"'){field+='"';i++;} else if(ch==='"') quoted=false; else field+=ch; }
     else if(ch==='"') quoted=true;
-    else if(ch===','){row.push(field);field='';}
-    else if(ch===';' && row.length===0){row.push(field);field='';}
+    else if(ch===delimiter){row.push(field);field='';}
     else if(ch==='\\n' || ch==='\\r'){if(ch==='\\r' && text[i+1]==='\\n')i++;row.push(field);if(row.some(v=>v.trim()))rows.push(row);row=[];field='';}
     else field+=ch;
   }
@@ -238,7 +239,6 @@ async function openAudit(id){
  $('auditCompanyId').value=c.id;$('auditTitle').textContent=c.name;$('auditWebsite').textContent=c.website||'Сайт не указан';
  try{
   const data=await request('/api/companies/'+id+'/audit'),a=data.audit||{};
-  ['https','mobile','clearServices','contactInfo','leadForm','portfolio','booking','speed'].forEach(k=>$('audit_'+k).checked===Boolean(a[k]));
   ['https','mobile','clearServices','contactInfo','leadForm','portfolio','booking','speed'].forEach(k=>$('audit_'+k).checked=Boolean(a[k]));
   $('auditOpportunity').value=a.opportunity||'';$('auditNotes').value=a.notes||'';
  }catch(e){showToast(e.message);return;}
