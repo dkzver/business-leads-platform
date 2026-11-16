@@ -380,7 +380,7 @@ process.on('SIGTERM', async () => { await pool.end(); process.exit(0); });
       await client.query(
         `INSERT INTO companies (name,country,city,category,phone,email,website,source,status,notes)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-        [name,country,city,String(d.category || 'Другое').slice(0,120),String(d.phone || '').slice(0,500),email,website,String(d.source || '').slice(0,1000),String(d.status || 'Новый').slice(0,80),String(d.notes || '').slice(0,5000)]
+        [name,country,city,String(d.category || 'Другое').slice(0,120),String(d.phone || '').slice(0,500),email,website,String(d.source || '').slice(0,1000),(['Новый','Письмо подготовлено','Связались','Ответили','Не подходит'].includes(String(d.status || '')) ? String(d.status) : 'Новый'),String(d.notes || '').slice(0,5000)]
       );
       imported++;
     }
