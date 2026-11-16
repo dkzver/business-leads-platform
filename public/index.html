@@ -42,16 +42,13 @@
   </div>
   <dialog id="offerDialog" class="offer-dialog">
     <form id="offerForm">
-      <div class="dialog-head"><div><span class="eyebrow">ШАБЛОНЫ ДЛЯ РАССЫЛКИ</span><h2 id="offerDialogTitle">Коммерческое предложение</h2><p class="offer-hint">Тексты можно редактировать. Изменения сохраняются в этом браузере.</p></div><button type="button" class="close" id="closeOfferDialog">×</button></div>
+      <div class="dialog-head"><div><span class="eyebrow">ТЕКСТ ИЗ БАЗЫ ДАННЫХ</span><h2 id="offerDialogTitle">Текст сообщения</h2><p class="offer-hint">Один редактируемый текст. Сохранение обновляет его в общей базе CRM.</p></div><button type="button" class="close" id="closeOfferDialog">×</button></div>
       <input type="hidden" id="offerType">
       <div class="offer-fields">
-        <label>Текст коммерческого предложения<textarea id="offerText" rows="9"></textarea></label>
-        <label>Тема письма<input id="emailSubject" maxlength="180"></label>
-        <label>Шаблон письма<textarea id="emailBody" rows="7"></textarea></label>
+        <label>Текст сообщения<textarea id="offerText" rows="18"></textarea></label>
       </div>
-      <p class="offer-hint">Переменные: {Компания} и {Город} — их можно оставить в шаблоне и заменить перед отправкой.</p>
       <p id="offerSaved" class="offer-saved" aria-live="polite"></p>
-      <div class="dialog-actions offer-actions"><button type="button" class="secondary" id="copyOfferBtn">Скопировать КП</button><button type="button" class="secondary" id="copyEmailBtn">Скопировать письмо</button><button type="button" class="primary" id="saveOfferBtn">Сохранить шаблон</button></div>
+      <div class="dialog-actions offer-actions"><button type="button" class="secondary" id="copyOfferBtn">Скопировать текст</button><button type="button" class="primary" id="saveOfferBtn">Сохранить в базе</button></div>
     </form>
   </dialog>
   <dialog id="companyDialog">
