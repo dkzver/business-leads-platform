@@ -84,6 +84,13 @@ app.get('/api/health', async (_req, res) => {
   catch { res.status(503).json({ ok: false }); }
 });
 
+app.get('/api/templates', async (_req, res) => {
+  try {
+    const result = await pool.query('SELECT type,title,body,updated_at FROM message_templates ORDER BY title');
+    res.json(result.rows);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Не удалось загрузить шаблоны' }); }
+});
+
 app.get('/api/templates/:type', async (req, res) => {
   try {
     if (!templateCatalog[req.params.type] && !['cleaning','auto'].includes(req.params.type)) return res.status(400).json({ error: 'Неизвестный тип текста' });
