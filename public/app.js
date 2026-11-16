@@ -116,48 +116,7 @@ $('closeDialog').onclick=closeForm; $('cancelDialog').onclick=closeForm; $('refr
 $('companyForm').onsubmit=async e=>{
   e.preventDefault(); $('formError').textContent='';
   const data=Object.fromEntries(fields.map(f=>[f,$(f).value.trim()]));
-  try { const id=$('companyId').value; await request(id?'/api/companies/'+id:'/api/companies',{method:id?'PUT':'POST',body:JSON.stringify(data)}); closeForm(); await 
-const outreachKeys = { website:'website', webapp:'webapp', automation:'automation', mobile:'mobile', cleaning:'cleaning', auto:'auto' };
-function fillOutreach() {
-  const company = companies.find(c => String(c.id) === $('outreachCompany').value);
-  const type = $('outreachType').value;
-  const lang = $('outreachLanguage').value;
-  const key = type === 'cleaning' || type === 'auto' ? (type + (lang === 'en' ? '_en' : '')) : type + '_' + lang;
-  const template = outreachTemplates.find(t => t.type === key);
-  if (!template) { $('outreachBody').value = 'Для выбранной комбинации пока нет шаблона.'; return; }
-  $('outreachBody').value = template.body
-    .replaceAll('{{company}}', company?.name || 'название компании')
-    .replaceAll('{{your_name}}', $('outreachName').value || 'Ваше имя');
-  $('outreachSubject').value = lang === 'en' ? 'A practical digital improvement idea for your business' : 'Идея для развития цифровых процессов вашей компании';
-}
-async function openOutreach() {
-  $('outreachCompany').innerHTML = companies.map(c => '<option value="'+esc(c.id)+'">'+esc(c.name+' · '+[c.city,c.country].filter(Boolean).join(', '))+'</option>').join('');
-  if (!companies.length) { $('outreachMessage').textContent = 'Сначала добавьте компанию в CRM.'; $('outreachDialog').showModal(); return; }
-  try { outreachTemplates = await request('/api/templates'); } catch(e) { $('outreachMessage').textContent = e.message; }
-  $('outreachDialog').showModal(); fillOutreach();
-}
-$('outreachBtn').onclick = openOutreach;
-$('closeOutreach').onclick = () => $('outreachDialog').close();
-['outreachCompany','outreachLanguage','outreachType','outreachName'].forEach(id => $(id).addEventListener('change', fillOutreach));
-$('outreachName').addEventListener('input', fillOutreach);
-$('copyOutreach').onclick = () => copyText($('outreachBody').value, 'Предложение');
-$('emailOutreach').onclick = () => {
-  const company = companies.find(c => String(c.id) === $('outreachCompany').value);
-  if (!company?.email) { $('outreachMessage').textContent = 'У этой компании не указан email. Добавьте адрес в карточку компании.'; return; }
-  const subject = encodeURIComponent($('outreachSubject').value);
-  const body = encodeURIComponent($('outreachBody').value + '\\n\\nЕсли вы не хотите получать подобные предложения, просто сообщите мне об этом.');
-  window.location.href = 'mailto:' + encodeURIComponent(company.email) + '?subject=' + subject + '&body=' + body;
-  $('outreachMessage').textContent = 'Черновик открыт в почтовом приложении. Проверьте его и отправьте вручную.';
-};
-$('exportBtn').onclick = () => {
-  const headers = ['name','category','status','country','city','phone','email','website','source','notes'];
-  const csv = [headers.join(','), ...companies.map(c => headers.map(k => '"'+String(c[k] ?? '').replace(/"/g,'""')+'"').join(','))].join('\\r\\n');
-  const blob = new Blob(['\\ufeff'+csv], {type:'text/csv;charset=utf-8'});
-  const url = URL.createObjectURL(blob); const a = document.createElement('a');
-  a.href = url; a.download = 'freelance-outreach-leads.csv'; a.click(); URL.revokeObjectURL(url);
-};
-
-load(); showToast(id?'Данные клиента обновлены':'Компания добавлена'); }
+  try { const id=$('companyId').value; await request(id?'/api/companies/'+id:'/api/companies',{method:id?'PUT':'POST',body:JSON.stringify(data)}); closeForm(); await load(); showToast(id?'Данные клиента обновлены':'Компания добавлена'); }
   catch(err){$('formError').textContent=err.message;}
 };
 $('companyRows').onclick=async e=>{
@@ -198,5 +157,43 @@ $('companyRows').onchange=async e=>{
   $(id).addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(load,250);});
   $(id).addEventListener('change',load);
 });
+
+
+async function openOutreach() {
+  $('outreachCompany').innerHTML = companies.map(c => '<option value="'+esc(c.id)+'">'+esc(c.name+' · '+[c.city,c.country].filter(Boolean).join(', '))+'</option>').join('');
+  $('outreachMessage').textContent = '';
+  if (!companies.length) $('outreachMessage').textContent = 'Сначала добавьте компанию в CRM.';
+  try { outreachTemplates = await request('/api/templates'); } catch(e) { $('outreachMessage').textContent = e.message; }
+  $('outreachDialog').showModal();
+  fillOutreach();
+}
+function fillOutreach() {
+  const company = companies.find(c => String(c.id) === $('outreachCompany').value);
+  const type = $('outreachType').value, lang = $('outreachLanguage').value;
+  const key = (type === 'cleaning' || type === 'auto') ? type + (lang === 'en' ? '_en' : '') : type + '_' + lang;
+  const template = outreachTemplates.find(t => t.type === key);
+  if (!template) { $('outreachBody').value = 'Для выбранной комбинации пока нет шаблона.'; return; }
+  $('outreachBody').value = template.body.replaceAll('{{company}}', company?.name || 'название компании').replaceAll('{{your_name}}', $('outreachName').value || 'Ваше имя');
+  $('outreachSubject').value = lang === 'en' ? 'A practical digital improvement idea for your business' : 'Идея для развития цифровых процессов вашей компании';
+}
+$('outreachBtn').onclick = openOutreach;
+$('closeOutreach').onclick = () => $('outreachDialog').close();
+['outreachCompany','outreachLanguage','outreachType','outreachName'].forEach(id => $(id).addEventListener('change', fillOutreach));
+$('outreachName').addEventListener('input', fillOutreach);
+$('copyOutreach').onclick = () => copyText($('outreachBody').value, 'Предложение');
+$('emailOutreach').onclick = () => {
+  const company = companies.find(c => String(c.id) === $('outreachCompany').value);
+  if (!company?.email) { $('outreachMessage').textContent = 'У этой компании не указан email. Добавьте адрес в карточку компании.'; return; }
+  const body = encodeURIComponent($('outreachBody').value + '\\n\\nЕсли вы не хотите получать подобные предложения, просто сообщите мне об этом.');
+  window.location.href = 'mailto:' + encodeURIComponent(company.email) + '?subject=' + encodeURIComponent($('outreachSubject').value) + '&body=' + body;
+  $('outreachMessage').textContent = 'Черновик открыт в почтовом приложении. Проверьте его и отправьте вручную.';
+};
+$('exportBtn').onclick = () => {
+  const headers = ['name','category','status','country','city','phone','email','website','source','notes'];
+  const csv = [headers.join(','), ...companies.map(c => headers.map(k => '"'+String(c[k] ?? '').replace(/"/g,'""')+'"').join(','))].join('\\r\\n');
+  const blob = new Blob(['\\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = 'freelance-outreach-leads.csv'; a.click(); URL.revokeObjectURL(url);
+};
 
 load();
