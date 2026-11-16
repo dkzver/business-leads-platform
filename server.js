@@ -102,7 +102,7 @@ app.get('/api/templates/:type', async (req, res) => {
 
 app.put('/api/templates/:type', async (req, res) => {
   try {
-    if (!['cleaning','auto'].includes(req.params.type)) return res.status(400).json({ error: 'Неизвестный тип текста' });
+    if (!templateCatalog[req.params.type] && !['cleaning','auto'].includes(req.params.type)) return res.status(400).json({ error: 'Неизвестный тип текста' });
     const body = String((req.body || {}).body || '');
     if (!body.trim()) return res.status(400).json({ error: 'Текст не может быть пустым' });
     const title = templateCatalog[req.params.type]?.title || (req.params.type === 'cleaning' ? 'Текст для клининговых компаний' : 'Текст для автосервисов');
