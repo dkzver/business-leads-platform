@@ -38,3 +38,10 @@ Use the **Импорт CSV** button. UTF-8 CSV files with comma or semicolon sep
 
 ## Website audit
 Each company row has a manual website-audit action. The checklist covers HTTPS, mobile usability, service clarity, contact visibility, enquiry form, portfolio, online booking and perceived loading speed. The displayed percentage is a simple count of manually checked items, not a Lighthouse score or automated technical assessment. Save concrete observations and suggested improvements in the opportunity and notes fields.
+
+
+## On-demand prospect discovery
+
+The **Найти заказчиков** button runs a server-side Brave Search API workflow across 12 country/language markets (US, UK, Canada, Australia, Germany, France, Switzerland, Russia, India, Singapore, Brazil and the Netherlands). Configure the secret `BRAVE_SEARCH_API_KEY` in Render → service → Environment. Obtain a key at https://api-dashboard.search.brave.com/. The key is never sent to the browser or committed to Git.
+
+The worker searches public web results, excludes major social networks/directories/job boards and known hosted-site platforms, then checks up to 18 candidate HTTPS pages per run. It applies timeouts, a 750 KB response limit, no redirects, and DNS checks rejecting private/local IP ranges. It does not crawl whole sites. It requires organization metadata and a concrete public signal such as a direct developer request, construction notice, missing viewport tag or no HTML form on a contact page. Absence of a form on one page is not proof the whole website lacks forms. Evidence, service fit, priority and RU/EN draft messages are stored in a separate discovery list; the user manually adds selected prospects to the company CRM. No personal contacts are harvested and no messages are sent. Search history is retained for 90 days. All signals and contact details require manual review.

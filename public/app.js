@@ -260,4 +260,23 @@ $('auditForm').onsubmit=async e=>{
  }catch(err){showToast(err.message);}
 };
 
+
+function renderDiscovery(rows){
+ const list=Array.isArray(rows)?rows:[];
+ $('discoveryMeta').textContent=list.length+' результатов за последние 90 дней · повторы исключаются';
+ $('discoveryResults').innerHTML=list.map(x=>{
+ const loc=[x.city,x.country].filter(Boolean).join(', ')||'Местоположение не указано';
+ return '<article class="discovery-card"><div class="discovery-card-head"><div><h3>'+esc(x.company_name)+'</h3><p>'+esc(loc+' · '+x.industry)+'</p></div><span class="discovery-priority '+(x.priority==='Высокий'?'high':'medium')+'">'+esc(x.priority)+'</span></div><p class="discovery-opportunity">'+esc(x.opportunity)+'</p><p class="discovery-service"><b>Услуга:</b> '+esc(x.service)+'</p><div class="discovery-links"><a href="'+esc(x.website)+'" target="_blank" rel="noopener noreferrer">Официальный сайт</a><a href="'+esc(x.evidence_url)+'" target="_blank" rel="noopener noreferrer">Страница-доказательство ↗</a></div><p class="discovery-evidence"><b>Источник:</b> '+esc(x.evidence_title)+' — '+esc(x.evidence_text)+'</p><details class="discovery-messages"><summary>Первое сообщение · RU / EN</summary><div><b>Русский</b><p>'+esc(x.message_ru)+'</p><b>English</b><p>'+esc(x.message_en)+'</p></div></details><div class="discovery-card-foot"><span>Контакт не найден автоматически · нужна ручная проверка</span><button class="secondary" data-discovery-add="'+x.id+'" '+(x.added_company_id?'disabled':'')+'>'+(x.added_company_id?'Добавлено в CRM':'Добавить в компании')+'</button></div></article>';
+ }).join('')||'<div class="discovery-empty">Новых подтверждённых компаний пока нет.</div>';
+}
+async function loadDiscovery(){try{renderDiscovery(await request('/api/discovery/results'));}catch(e){$('discoveryStatus').textContent=e.message;}}
+$('searchProspectsBtn').onclick=async()=>{
+ const b=$('searchProspectsBtn');b.disabled=true;b.textContent='Ищу компании…';$('discoveryStatus').textContent='Поиск по открытым источникам и проверка сайтов. Это может занять до минуты.';
+ try{const d=await request('/api/discovery/search',{method:'POST',body:JSON.stringify({})});renderDiscovery(d.results);$('discoveryStatus').textContent='Регионов поиска: '+d.searched+' · проверено страниц: '+d.checked+' · новых результатов: '+d.added+' · повторов: '+d.duplicates+'.';showToast('Поиск завершён: '+d.added+' новых компаний.');}
+ catch(e){$('discoveryStatus').textContent=e.message;if(e.message.includes('BRAVE_SEARCH_API_KEY'))$('discoveryStatus').innerHTML=esc(e.message)+' <a href="https://api-dashboard.search.brave.com/" target="_blank" rel="noopener noreferrer">Открыть Brave Search API</a>';}
+ finally{b.disabled=false;b.textContent='⌕ Найти заказчиков';}
+};
+$('discoveryResults').onclick=async e=>{const b=e.target.closest('[data-discovery-add]');if(!b||b.disabled)return;b.disabled=true;try{await request('/api/discovery/results/'+encodeURIComponent(b.dataset.discoveryAdd)+'/add',{method:'POST',body:JSON.stringify({})});await Promise.all([load(),loadDiscovery()]);showToast('Компания добавлена в CRM');}catch(err){b.disabled=false;showToast(err.message);}};
+
+loadDiscovery();
 load();

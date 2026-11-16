@@ -62,6 +62,13 @@ async function initDb() {
     CREATE INDEX IF NOT EXISTS companies_city_idx ON companies (LOWER(city));
     ALTER TABLE companies ADD COLUMN IF NOT EXISTS audit JSONB NOT NULL DEFAULT '{}'::jsonb;
     ALTER TABLE companies ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMPTZ;
+    CREATE TABLE IF NOT EXISTS discovery_results (
+      id BIGSERIAL PRIMARY KEY, company_name TEXT NOT NULL, country TEXT DEFAULT '', city TEXT DEFAULT '',
+      industry TEXT DEFAULT '', website TEXT NOT NULL UNIQUE, evidence_url TEXT NOT NULL,
+      evidence_title TEXT DEFAULT '', evidence_text TEXT DEFAULT '', opportunity TEXT NOT NULL,
+      service TEXT NOT NULL, priority TEXT NOT NULL, message_ru TEXT NOT NULL, message_en TEXT NOT NULL,
+      added_company_id BIGINT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
     CREATE TABLE IF NOT EXISTS message_templates (
       type TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -214,6 +221,117 @@ app.post('/api/companies/import', async (req,res) => {
 });
 app.get('/api/companies/:id/audit',async(req,res)=>{try{const r=await pool.query('SELECT id,name,website,audit,audit_updated_at FROM companies WHERE id=$1',[req.params.id]);if(!r.rowCount)return res.status(404).json({error:'Компания не найдена'});res.json(r.rows[0]);}catch(e){console.error(e);res.status(500).json({error:'Не удалось загрузить анализ сайта'});}});
 app.put('/api/companies/:id/audit',async(req,res)=>{try{const a=req.body||{},keys=['https','mobile','clearServices','contactInfo','leadForm','portfolio','booking','speed'],audit={};for(const k of keys)audit[k]=a[k]===true;audit.notes=String(a.notes||'').trim().slice(0,5000);audit.opportunity=String(a.opportunity||'').trim().slice(0,5000);audit.checkedAt=new Date().toISOString();const r=await pool.query('UPDATE companies SET audit=$1::jsonb,audit_updated_at=NOW(),updated_at=NOW() WHERE id=$2 RETURNING id,audit,audit_updated_at',[JSON.stringify(audit),req.params.id]);if(!r.rowCount)return res.status(404).json({error:'Компания не найдена'});res.json(r.rows[0]);}catch(e){console.error(e);res.status(500).json({error:'Не удалось сохранить анализ сайта'});}});
+
+const discoveryQueries = [
+  {country:'US',lang:'en',q:'"looking for a web developer" OR "website redesign" "request for proposal"'},
+  {country:'GB',lang:'en',q:'"website redesign" tender OR "web development" "request for proposal"'},
+  {country:'CA',lang:'en',q:'"seeking a web developer" OR "website redesign RFP"'},
+  {country:'AU',lang:'en',q:'"website redesign" "request for quote"'},
+  {country:'DE',lang:'de',q:'"Website Relaunch" Ausschreibung OR "Webentwickler gesucht"'},
+  {country:'FR',lang:'fr',q:'"refonte site internet" "appel d’offres" OR "recherche développeur web"'},
+  {country:'CH',lang:'de',q:'"Website Relaunch" "Webentwickler gesucht"'},
+  {country:'RU',lang:'ru',q:'"ищем веб-разработчика" OR "тендер на разработку сайта" OR "редизайн сайта"'},
+  {country:'IN',lang:'en',q:'"website redesign" "request for proposal"'},
+  {country:'SG',lang:'en',q:'"web development" "request for proposal"'},
+  {country:'BR',lang:'pt',q:'"redesign de site" "desenvolvedor web"'},
+  {country:'NL',lang:'nl',q:'"website vernieuwen" "webdeveloper gezocht"'}
+];
+const discoveryExcluded = ['linkedin.com','facebook.com','instagram.com','x.com','twitter.com','youtube.com','indeed.com','glassdoor.com','upwork.com','freelancer.com','fiverr.com','clutch.co','goodfirms.co','yelp.com','yellowpages.com','crunchbase.com','zoominfo.com','wikipedia.org','reddit.com','gov.uk','sam.gov','ted.europa.eu','mercell.com','wixsite.com','wordpress.com','webflow.io','squarespace.com'];
+let discoveryLastRun=0;
+const hostOf=h=>String(h||'').toLowerCase().replace(/^www\./,'');
+const excludedHost=h=>discoveryExcluded.some(d=>hostOf(h)===d||hostOf(h).endsWith('.'+d));
+function privateAddress(ip){
+ const v=require('node:net').isIP(ip);
+ if(v===4){const p=ip.split('.').map(Number),a=p[0],b=p[1];return a===0||a===10||a===127||a>=224||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&b===168)||(a===100&&b>=64&&b<=127)||(a===198&&(b===18||b===19));}
+ if(v===6){const n=parseInt(ip.split(':')[0]||'0',16);return !(n>=0x2000&&n<=0x3fff);}
+ return true;
+}
+async function safePublicPage(raw){
+ let u;try{u=new URL(raw);}catch{return null;}
+ if(u.protocol!=='https:'||u.username||u.password||u.port&&u.port!=='443'||require('node:net').isIP(u.hostname)||excludedHost(u.hostname)||/localhost|\.local$|\.internal$/i.test(u.hostname))return null;
+ try{const ips=await require('node:dns').promises.lookup(u.hostname,{all:true});if(!ips.length||ips.some(x=>privateAddress(x.address)))return null;}catch{return null;}
+ u.hash='';
+ try{
+  const r=await fetch(u,{redirect:'manual',signal:AbortSignal.timeout(6000),headers:{Accept:'text/html','User-Agent':'FreelanceOutreachCRM/1.0'}});
+  if(!r.ok||r.status>=300||!(r.headers.get('content-type')||'').includes('text/html')||Number(r.headers.get('content-length')||0)>750000)return null;
+  const reader=r.body?.getReader();if(!reader)return null;let size=0,chunks=[];
+  while(true){const x=await reader.read();if(x.done)break;size+=x.value.byteLength;if(size>750000){await reader.cancel();return null;}chunks.push(Buffer.from(x.value));}
+  return Buffer.concat(chunks).toString('utf8');
+ }catch{return null;}
+}
+function discoveryText(html){return String(html||'').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&#39;/gi,"'").replace(/\s+/g,' ').trim().slice(0,20000);}
+function findOrg(node,depth=0){
+ if(!node||depth>6)return null;if(Array.isArray(node)){for(const n of node){const x=findOrg(n,depth+1);if(x)return x;}return null;}
+ if(typeof node!=='object')return null;const types=Array.isArray(node['@type'])?node['@type']:[node['@type']];
+ if(types.some(t=>/Organization|LocalBusiness|ProfessionalService|Corporation|Store/i.test(String(t||'')))&&node.name)return node;
+ return findOrg(node['@graph'],depth+1)||findOrg(node.publisher,depth+1)||findOrg(node.mainEntity,depth+1);
+}
+function orgFromHtml(html){
+ const blocks=html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi)||[];
+ for(const b of blocks){try{const x=findOrg(JSON.parse(b.replace(/^<script[^>]*>/i,'').replace(/<\/script>$/i,'')));if(x)return x;}catch{}}
+ const meta=(html.match(/<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']+)["']/i)||[])[1];return meta?{name:meta}:null;
+}
+function findOpportunity(html,text,url){
+ const full=(text+' '+html).slice(0,30000);
+ const hit=full.match(/request for proposal|request for quotation|looking for (?:a )?(?:web|website|software|app) developer|seeking (?:a )?(?:web|website|software|app) developer|web developer wanted|ищем веб-разработчика|требуется веб-разработчик|тендер.{0,60}(?:сайт|веб|разработ)|редизайн сайта|recherche développeur web|webentwickler gesucht|refonte site internet/i);
+ if(hit)return {opportunity:'Публичная страница содержит сигнал запроса на разработку или обновление: «'+hit[0]+'». Актуальность нужно проверить вручную.',service:'Разработка или редизайн сайта / веб-сервиса',priority:'Высокий'};
+ if(/under construction|coming soon|site is being updated|website under maintenance|сайт на реконструкции|сайт в разработке/i.test(full))return {opportunity:'На странице размещено сообщение о разработке, реконструкции или скором запуске сайта; актуальность требует ручной проверки.',service:'Разработка или редизайн сайта',priority:'Средний'};
+ if(!/<meta\b[^>]*name=["']viewport["']/i.test(html)&&/<body\b/i.test(html))return {opportunity:'В HTML проверенной страницы не найден meta viewport; мобильную адаптивность следует проверить вручную.',service:'Адаптивный редизайн сайта',priority:'Средний'};
+ if(!/<form\b/i.test(html)&&/contact|kontakt|контакт|contactez|contato/i.test(new URL(url).pathname))return {opportunity:'На проверенной странице контактов не найден HTML-элемент формы. Проверьте другие страницы и внешние виджеты вручную.',service:'Форма заявок или клиентский портал',priority:'Средний'};
+ return null;
+}
+function makeMessages(name,opp,service,url){
+ return {ru:'Здравствуйте, команда '+name+'! На вашей публичной странице ('+url+') я заметил: '+opp+' Я независимый разработчик, занимаюсь направлением «'+service+'». Если задача актуальна, могу предложить несколько практических вариантов. Будет ли удобно коротко обсудить?',
+ en:'Hello '+name+' team, on your public page ('+url+') I noticed: '+opp+' I am an independent developer working on '+service.toLowerCase()+'. If this is still relevant, I would be happy to suggest a few practical options. Would a short conversation be convenient?'};
+}
+async function runBraveQuery(q){
+ const u=new URL('https://api.search.brave.com/res/v1/web/search');u.searchParams.set('q',q.q);u.searchParams.set('country',q.country);u.searchParams.set('search_lang',q.lang);u.searchParams.set('count','8');u.searchParams.set('extra_snippets','true');
+ const r=await fetch(u,{signal:AbortSignal.timeout(12000),headers:{Accept:'application/json','X-Subscription-Token':process.env.BRAVE_SEARCH_API_KEY}});
+ if(!r.ok)throw new Error('Search API HTTP '+r.status);const d=await r.json();return d.web?.results||[];
+}
+async function limited(items,n,fn){let i=0;const out=new Array(items.length);await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{while(true){const k=i++;if(k>=items.length)return;try{out[k]=await fn(items[k]);}catch{out[k]=null;}}}));return out;}
+async function verifyDiscovery(r){
+ let u;try{u=new URL(r.url);}catch{return null;}if(u.protocol!=='https:'||excludedHost(u.hostname))return null;
+ const html=await safePublicPage(u.toString());if(!html)return null;const org=orgFromHtml(html);const name=String(org?.name||'').trim().slice(0,160);if(name.length<4)return null;
+ const title=discoveryText((html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)||[])[1]||'');const text=discoveryText(html);const snippet=[r.title,r.description,...(r.extra_snippets||[])].join(' ');
+ if(!(title.toLowerCase().includes(name.toLowerCase())||text.toLowerCase().includes(name.toLowerCase())||snippet.toLowerCase().includes(name.toLowerCase())))return null;
+ const opp=findOpportunity(html,text+' '+snippet,u.toString());if(!opp)return null;
+ const addr=org.address||{};const country=typeof addr.addressCountry==='string'?addr.addressCountry:(addr.addressCountry?.name||'');const city=String(addr.addressLocality||'').slice(0,100);
+ const industry=/clinic|medical|dental|health/i.test(text)?'Здравоохранение':/restaurant|hotel|cafe/i.test(text)?'Гостиницы и общепит':/law|legal|attorney/i.test(text)?'Профессиональные услуги':/construction|builder|contractor/i.test(text)?'Строительство':/retail|shop|store/i.test(text)?'Торговля':'Услуги для бизнеса';
+ const website=u.origin;const messages=makeMessages(name,opp.opportunity,opp.service,u.toString());
+ return {company_name:name,country,city,industry,website,evidence_url:u.toString(),evidence_title:String(r.title||title||name).slice(0,300),evidence_text:String(r.description||'').slice(0,1000),opportunity:opp.opportunity,service:opp.service,priority:opp.priority,message_ru:messages.ru,message_en:messages.en};
+}
+app.get('/api/discovery/results',async(_req,res)=>{
+ try{const r=await pool.query("SELECT id,company_name,country,city,industry,website,evidence_url,evidence_title,evidence_text,opportunity,service,priority,message_ru,message_en,added_company_id,created_at FROM discovery_results WHERE created_at>NOW()-INTERVAL '90 days' ORDER BY created_at DESC LIMIT 40");res.json(r.rows);}
+ catch(e){console.error(e);res.status(500).json({error:'Не удалось загрузить результаты поиска'});}
+});
+app.post('/api/discovery/search',async(_req,res)=>{
+ if(!process.env.BRAVE_SEARCH_API_KEY)return res.status(503).json({error:'Поиск не подключён. Добавьте BRAVE_SEARCH_API_KEY в Render → Environment. Ключ: https://api-dashboard.search.brave.com/'});
+ if(Date.now()-discoveryLastRun<30000)return res.status(429).json({error:'Подождите 30 секунд перед следующим поиском.'});discoveryLastRun=Date.now();
+ try{
+  const batches=await limited(discoveryQueries,3,runBraveQuery);const candidates=new Map();
+  for(const batch of batches)for(const r of batch||[]){try{const u=new URL(r.url),host=hostOf(u.hostname);if(u.protocol==='https:'&&!excludedHost(host)&&!candidates.has(host))candidates.set(host,r);}catch{}}
+  const checked=await limited(Array.from(candidates.values()).slice(0,18),3,verifyDiscovery);const client=await pool.connect();let added=0,duplicates=0;
+  try{await client.query('BEGIN');for(const p of checked.filter(Boolean)){
+   const host=hostOf(new URL(p.website).hostname);
+   const dup=await client.query("SELECT id FROM companies WHERE LOWER(name)=LOWER($1) OR LOWER(regexp_replace(split_part(website,'/',3),'^www\\.',''))=$2 LIMIT 1",[p.company_name,host]);
+   if(dup.rowCount){duplicates++;continue;}
+   const ins=await client.query("INSERT INTO discovery_results(company_name,country,city,industry,website,evidence_url,evidence_title,evidence_text,opportunity,service,priority,message_ru,message_en) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT(website) DO NOTHING RETURNING id",[p.company_name,p.country,p.city,p.industry,p.website,p.evidence_url,p.evidence_title,p.evidence_text,p.opportunity,p.service,p.priority,p.message_ru,p.message_en]);
+   if(ins.rowCount)added++;else duplicates++;
+  }await client.query('COMMIT');}catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
+  const rows=await pool.query("SELECT id,company_name,country,city,industry,website,evidence_url,evidence_title,evidence_text,opportunity,service,priority,message_ru,message_en,added_company_id,created_at FROM discovery_results WHERE created_at>NOW()-INTERVAL '90 days' ORDER BY created_at DESC LIMIT 40");
+  res.json({searched:discoveryQueries.length,checked:checked.filter(Boolean).length,added,duplicates,results:rows.rows});
+ }catch(e){console.error('Discovery search failed:',e);res.status(502).json({error:'Поиск не завершён. Проверьте ключ API, лимиты и доступность Brave Search.'});}
+});
+app.post('/api/discovery/results/:id/add',async(req,res)=>{
+ const c=await pool.connect();try{await c.query('BEGIN');const f=await c.query('SELECT * FROM discovery_results WHERE id=$1 FOR UPDATE',[req.params.id]);if(!f.rowCount){await c.query('ROLLBACK');return res.status(404).json({error:'Результат не найден'});}
+ const p=f.rows[0];if(p.added_company_id){await c.query('COMMIT');return res.json({companyId:p.added_company_id,alreadyAdded:true});}
+ const host=hostOf(new URL(p.website).hostname);const d=await c.query("SELECT id FROM companies WHERE LOWER(name)=LOWER($1) OR LOWER(regexp_replace(split_part(website,'/',3),'^www\\.',''))=$2 LIMIT 1",[p.company_name,host]);let id;
+ if(d.rowCount)id=d.rows[0].id;else{const notes=['Добавлено из поиска потенциальных заказчиков','Возможность: '+p.opportunity,'Услуга: '+p.service,'Приоритет: '+p.priority,'Доказательство: '+p.evidence_url,'Сообщение RU: '+p.message_ru,'Message EN: '+p.message_en].join('\n\n');const x=await c.query("INSERT INTO companies(name,country,city,category,website,source,status,notes) VALUES($1,$2,$3,$4,$5,$6,'Новый',$7) RETURNING id",[p.company_name,p.country,p.city,p.industry,p.website,p.evidence_url,notes]);id=x.rows[0].id;}
+ await c.query('UPDATE discovery_results SET added_company_id=$1 WHERE id=$2',[id,p.id]);await c.query('COMMIT');res.json({companyId:id,alreadyAdded:Boolean(d.rowCount)});
+ }catch(e){await c.query('ROLLBACK');console.error(e);res.status(500).json({error:'Не удалось добавить компанию'});}finally{c.release();}
+});
+
 const seedLeads = [
   // Cleaning prospects
   {name:"Cleanface",country:"Казахстан",city:"Алматы",category:"Клининг",phone:"+7 708 624-30-05; +7 707 104-01-31",email:"idir.cleanface@yandex.kz",website:"https://cleanface.kz/",source:"https://cleanface.kz/",notes:"Локальная клининговая компания. Размер команды не подтверждён; проверить перед обращением."},
