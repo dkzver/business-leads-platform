@@ -88,6 +88,7 @@ function render() {
   $('emptyState').hidden=companies.length!==0;
   $('companyRows').innerHTML=companies.map(c=>{
     const digits = phoneForMessenger(c.phone);
+    const auditButton = '<button class="table-action audit-action" type="button" data-audit-open="'+c.id+'">Анализ сайта</button>';
     const email = '<div class="email-cell">'+(c.email ? '<a class="table-action email-action" href="mailto:'+esc(c.email)+'">Почта</a>' : '<span class="no-action">Нет email</span>')+'<button class="table-action edit-email-action" type="button" data-edit="'+c.id+'">Изменить email</button></div>';
     const phones = phoneLinks(c.phone);
     const whatsapp = digits ? '<a class="table-action whatsapp-action" href="https://wa.me/'+digits+'" target="_blank" rel="noopener">WhatsApp</a>' : '<span class="no-action">Нет номера</span>';
@@ -96,7 +97,7 @@ function render() {
     const searchText = [c.name, c.city, c.country].filter(Boolean).join(' ');
     const companyQuery = encodeURIComponent(searchText);
     const companySearch = '<div class="company-search"><a class="search-company yandex-search" href="https://yandex.ru/maps/?text='+companyQuery+'" target="_blank" rel="noopener noreferrer" aria-label="Найти '+esc(c.name)+' в Яндекс Картах">Яндекс</a><a class="search-company gis-search" href="https://2gis.ru/search/'+companyQuery+'" target="_blank" rel="noopener noreferrer" aria-label="Найти '+esc(c.name)+' в 2ГИС">2ГИС</a></div>';
-    return '<tr><td class="company-cell"><strong>'+esc(c.name)+'</strong>'+companySearch+'<span class="sub">'+esc([c.category,c.city,c.country].filter(Boolean).join(' · '))+'</span></td><td>'+phones+'</td><td>'+email+'</td><td>'+whatsapp+'</td><td>'+max+'</td><td>'+status+'</td><td><button class="icon-btn" data-delete="'+c.id+'" title="Удалить компанию">×</button></td></tr>';
+    return '<tr><td class="company-cell"><strong>'+esc(c.name)+'</strong>'+companySearch+auditButton+'<span class="sub">'+esc([c.category,c.city,c.country].filter(Boolean).join(' · '))+'</span></td><td>'+phones+'</td><td>'+email+'</td><td>'+whatsapp+'</td><td>'+max+'</td><td>'+status+'</td><td><button class="icon-btn" data-delete="'+c.id+'" title="Удалить компанию">×</button></td></tr>';
   }).join('') || '<tr><td colspan="7" class="empty">Нет компаний по выбранным условиям</td></tr>';
 }
 async function load() {
@@ -194,6 +195,69 @@ $('exportBtn').onclick = () => {
   const blob = new Blob(['\\ufeff'+csv], {type:'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob), a = document.createElement('a');
   a.href = url; a.download = 'freelance-outreach-leads.csv'; a.click(); URL.revokeObjectURL(url);
+};
+
+
+function parseCsv(text) {
+  const rows=[]; let row=[], field='', quoted=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(quoted){ if(ch==='"' && text[i+1]==='"'){field+='"';i++;} else if(ch==='"') quoted=false; else field+=ch; }
+    else if(ch==='"') quoted=true;
+    else if(ch===','){row.push(field);field='';}
+    else if(ch===';' && row.length===0){row.push(field);field='';}
+    else if(ch==='\\n' || ch==='\\r'){if(ch==='\\r' && text[i+1]==='\\n')i++;row.push(field);if(row.some(v=>v.trim()))rows.push(row);row=[];field='';}
+    else field+=ch;
+  }
+  row.push(field);if(row.some(v=>v.trim()))rows.push(row);
+  if(!rows.length)return [];
+  const norm = v => String(v||'').trim().toLowerCase().replace(/[ё]/g,'е').replace(/[ _-]+/g,'');
+  const aliases={name:['name','company','companyname','название','компания','названиекомпании'],country:['country','страна'],city:['city','город'],category:['category','industry','направление','категория','отрасль'],phone:['phone','телефон','тел'],email:['email','e-mail','почта'],website:['website','site','url','сайт'],source:['source','источник'],status:['status','статус'],notes:['notes','note','заметки','примечание']};
+  const headers=rows[0].map(norm), map={};
+  for(const [key,names] of Object.entries(aliases)){const idx=headers.findIndex(v=>names.includes(v));if(idx>=0)map[key]=idx;}
+  if(map.name===undefined) throw new Error('Не найдена колонка с названием компании. Поддерживаются name, company, название, компания.');
+  return rows.slice(1).map(r=>Object.fromEntries(Object.entries(map).map(([k,i])=>[k,r[i]||''])));
+}
+$('importBtn').onclick=()=>$('importFile').click();
+$('importFile').onchange=async()=>{
+ const file=$('importFile').files[0]; if(!file)return;
+ try{
+  const rows=parseCsv((await file.text()).replace(/^\\uFEFF/,''));
+  if(!rows.length)throw new Error('В CSV нет строк с компаниями.');
+  const result=await request('/api/companies/import',{method:'POST',body:JSON.stringify({companies:rows})});
+  await load(); showToast('Импортировано: '+result.imported+' · дубли: '+result.duplicates+' · пропущено: '+result.invalid);
+ }catch(e){alert('Ошибка импорта: '+e.message);}finally{$('importFile').value='';}
+};
+function auditScore(){
+ const ids=['https','mobile','clearServices','contactInfo','leadForm','portfolio','booking','speed'];
+ const score=Math.round(ids.filter(k=>$('audit_'+k).checked).length/ids.length*100);
+ $('auditScore').textContent=score+'%';return score;
+}
+async function openAudit(id){
+ const c=companies.find(x=>String(x.id)===String(id));if(!c)return;
+ $('auditCompanyId').value=c.id;$('auditTitle').textContent=c.name;$('auditWebsite').textContent=c.website||'Сайт не указан';
+ try{
+  const data=await request('/api/companies/'+id+'/audit'),a=data.audit||{};
+  ['https','mobile','clearServices','contactInfo','leadForm','portfolio','booking','speed'].forEach(k=>$('audit_'+k).checked===Boolean(a[k]));
+  ['https','mobile','clearServices','contactInfo','leadForm','portfolio','booking','speed'].forEach(k=>$('audit_'+k).checked=Boolean(a[k]));
+  $('auditOpportunity').value=a.opportunity||'';$('auditNotes').value=a.notes||'';
+ }catch(e){showToast(e.message);return;}
+ auditScore();$('auditDialog').showModal();
+}
+$('companyRows').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-audit-open]');if(btn)openAudit(btn.dataset.auditOpen);
+});
+$('closeAudit').onclick=()=>$('auditDialog').close();$('cancelAudit').onclick=()=>$('auditDialog').close();
+document.querySelectorAll('[data-audit]').forEach(el=>el.addEventListener('change',auditScore));
+$('auditForm').onsubmit=async e=>{
+ e.preventDefault();
+ const data={};
+ document.querySelectorAll('[data-audit]').forEach(el=>data[el.dataset.audit]=el.checked);
+ data.opportunity=$('auditOpportunity').value;data.notes=$('auditNotes').value;
+ try{
+  await request('/api/companies/'+$('auditCompanyId').value+'/audit',{method:'PUT',body:JSON.stringify(data)});
+  $('auditDialog').close();showToast('Анализ сайта сохранён');
+ }catch(err){showToast(err.message);}
 };
 
 load();
