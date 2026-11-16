@@ -122,9 +122,15 @@ $('companyRows').onclick=async e=>{
   const maxButton=e.target.closest('[data-max]');
   if(maxButton){
     const number=maxButton.dataset.max;
-    window.open('https://max.ru/','_blank','noopener');
-    try { await navigator.clipboard.writeText(number); showToast('Номер '+number+' скопирован. В MAX вставьте его в поиск контактов.'); }
-    catch { showToast('Найдите клиента в MAX по номеру: '+number); }
+    // MAX does not provide a public direct-chat URL by phone number.
+    // Open the actual web messenger and copy the number for its contact search.
+    window.open('https://web.max.ru/','_blank','noopener,noreferrer');
+    try {
+      await navigator.clipboard.writeText(number);
+      showToast('Номер '+number+' скопирован. В MAX откройте «Контакты» → «+» → «Найти по номеру» и вставьте его.');
+    } catch {
+      showToast('В MAX откройте «Контакты» → «+» → «Найти по номеру». Номер клиента: '+number);
+    }
     return;
   }
   const edit=e.target.closest('[data-edit]');
