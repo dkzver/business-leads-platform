@@ -60,6 +60,8 @@ async function initDb() {
     );
     CREATE INDEX IF NOT EXISTS companies_name_idx ON companies (LOWER(name));
     CREATE INDEX IF NOT EXISTS companies_city_idx ON companies (LOWER(city));
+    ALTER TABLE companies ADD COLUMN IF NOT EXISTS audit JSONB NOT NULL DEFAULT '{}'::jsonb;
+    ALTER TABLE companies ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMPTZ;
     CREATE TABLE IF NOT EXISTS message_templates (
       type TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -193,6 +195,25 @@ app.delete('/api/companies/:id', async (req, res) => {
 });
 
 
+app.post('/api/companies/import', async (req,res) => {
+ const rows=Array.isArray(req.body&&req.body.companies)?req.body.companies:[];
+ if(!rows.length)return res.status(400).json({error:'Файл не содержит компаний для импорта'});
+ if(rows.length>1000)return res.status(400).json({error:'Максимум 1000 строк за импорт'});
+ const client=await pool.connect();let imported=0,duplicates=0,invalid=0;
+ try{await client.query('BEGIN');for(const d of rows){
+  const name=String(d.name||'').trim().slice(0,180);if(!name){invalid++;continue;}
+  const country=String(d.country||'').trim().slice(0,120),city=String(d.city||'').trim().slice(0,120);
+  const email=String(d.email||'').trim().slice(0,240),website=String(d.website||'').trim().slice(0,500);
+  const site=website.toLowerCase().replace('https://','').replace('http://','').replace('www.','').replace(/\/+$/,'');
+  const dup=await client.query("SELECT id FROM companies WHERE (LOWER(name)=LOWER($1) AND LOWER(COALESCE(city,''))=LOWER($2) AND LOWER(COALESCE(country,''))=LOWER($3)) OR ($4<>'' AND LOWER(email)=$4) OR ($5<>'' AND LOWER(RTRIM(REPLACE(REPLACE(REPLACE(website,'https://',''),'http://',''),'www.',''),'/'))=$5) LIMIT 1",[name,city,country,email.toLowerCase(),site]);
+  if(dup.rowCount){duplicates++;continue;}
+  const allowed=['Новый','Письмо подготовлено','Связались','Ответили','Не подходит'];const status=allowed.includes(String(d.status||''))?String(d.status):'Новый';
+  await client.query('INSERT INTO companies (name,country,city,category,phone,email,website,source,status,notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[name,country,city,String(d.category||'Другое').slice(0,120),String(d.phone||'').slice(0,500),email,website,String(d.source||'').slice(0,1000),status,String(d.notes||'').slice(0,5000)]);imported++;
+ }await client.query('COMMIT');res.json({imported,duplicates,invalid,total:rows.length});}
+ catch(e){await client.query('ROLLBACK');console.error(e);res.status(500).json({error:'Не удалось импортировать компании'});}finally{client.release();}
+});
+app.get('/api/companies/:id/audit',async(req,res)=>{try{const r=await pool.query('SELECT id,name,website,audit,audit_updated_at FROM companies WHERE id=$1',[req.params.id]);if(!r.rowCount)return res.status(404).json({error:'Компания не найдена'});res.json(r.rows[0]);}catch(e){console.error(e);res.status(500).json({error:'Не удалось загрузить анализ сайта'});}});
+app.put('/api/companies/:id/audit',async(req,res)=>{try{const a=req.body||{},keys=['https','mobile','clearServices','contactInfo','leadForm','portfolio','booking','speed'],audit={};for(const k of keys)audit[k]=a[k]===true;audit.notes=String(a.notes||'').trim().slice(0,5000);audit.opportunity=String(a.opportunity||'').trim().slice(0,5000);audit.checkedAt=new Date().toISOString();const r=await pool.query('UPDATE companies SET audit=$1::jsonb,audit_updated_at=NOW(),updated_at=NOW() WHERE id=$2 RETURNING id,audit,audit_updated_at',[JSON.stringify(audit),req.params.id]);if(!r.rowCount)return res.status(404).json({error:'Компания не найдена'});res.json(r.rows[0]);}catch(e){console.error(e);res.status(500).json({error:'Не удалось сохранить анализ сайта'});}});
 const seedLeads = [
   // Cleaning prospects
   {name:"Cleanface",country:"Казахстан",city:"Алматы",category:"Клининг",phone:"+7 708 624-30-05; +7 707 104-01-31",email:"idir.cleanface@yandex.kz",website:"https://cleanface.kz/",source:"https://cleanface.kz/",notes:"Локальная клининговая компания. Размер команды не подтверждён; проверить перед обращением."},

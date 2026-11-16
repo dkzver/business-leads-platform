@@ -17,7 +17,7 @@
       <div class="sidebar-bottom">Версия 1.0 · Beta</div>
     </aside>
     <main class="main">
-      <header class="topbar"><div><span class="eyebrow">ВАША БАЗА КЛИЕНТОВ</span><h1>Компании</h1></div><div class="topbar-actions"><button id="exportBtn" class="secondary">Экспорт CSV</button><button id="outreachBtn" class="secondary">✉ Создать предложение</button><button id="addBtn" class="primary">＋ Добавить компанию</button></div></header>
+      <header class="topbar"><div><span class="eyebrow">ВАША БАЗА КЛИЕНТОВ</span><h1>Компании</h1></div><div class="topbar-actions"><button id="importBtn" class="secondary">Импорт CSV</button><input id="importFile" type="file" accept=".csv,text/csv" hidden><button id="exportBtn" class="secondary">Экспорт CSV</button><button id="outreachBtn" class="secondary">✉ Создать предложение</button><button id="addBtn" class="primary">＋ Добавить компанию</button></div></header>
       <section class="stats">
         <article class="stat"><span>Всего компаний</span><strong id="totalCount">0</strong><small>В вашей базе</small></article>
         <article class="stat"><span>Новые</span><strong id="newCount">0</strong><small>Ожидают контакта</small></article>
@@ -83,6 +83,30 @@
       </div>
       <p id="outreachMessage" class="offer-saved" aria-live="polite"></p>
       <div class="dialog-actions"><button type="button" class="secondary" id="copyOutreach">Скопировать текст</button><button type="button" class="primary" id="emailOutreach">Открыть письмо в почте</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="auditDialog" class="offer-dialog">
+    <form id="auditForm">
+      <div class="dialog-head"><div><span class="eyebrow">АНАЛИЗ САЙТА · РУЧНАЯ ПРОВЕРКА</span><h2 id="auditTitle">Анализ компании</h2><p class="offer-hint" id="auditWebsite"></p></div><button type="button" class="close" id="closeAudit">×</button></div>
+      <input type="hidden" id="auditCompanyId">
+      <div class="audit-grid">
+        <label><input type="checkbox" id="audit_https" data-audit="https"> HTTPS включён</label>
+        <label><input type="checkbox" id="audit_mobile" data-audit="mobile"> Удобно на мобильных</label>
+        <label><input type="checkbox" id="audit_clearServices" data-audit="clearServices"> Услуги и цены понятны</label>
+        <label><input type="checkbox" id="audit_contactInfo" data-audit="contactInfo"> Контакты легко найти</label>
+        <label><input type="checkbox" id="audit_leadForm" data-audit="leadForm"> Есть рабочая форма заявки</label>
+        <label><input type="checkbox" id="audit_portfolio" data-audit="portfolio"> Есть портфолио / кейсы</label>
+        <label><input type="checkbox" id="audit_booking" data-audit="booking"> Есть онлайн-запись / заказ</label>
+        <label><input type="checkbox" id="audit_speed" data-audit="speed"> Страницы загружаются быстро</label>
+      </div>
+      <div class="audit-score"><span>Пункты, которые уже есть на сайте</span><strong id="auditScore">0%</strong></div>
+      <div class="form-grid">
+        <label class="wide">Что можно улучшить<textarea id="auditOpportunity" rows="3" placeholder="Например: добавить форму заявки, онлайн-запись или каталог услуг. Укажите только то, что действительно проверили."></textarea></label>
+        <label class="wide">Заметки по проверке<textarea id="auditNotes" rows="3" placeholder="Наблюдения, ссылки на конкретные страницы, дата проверки…"></textarea></label>
+      </div>
+      <p class="offer-hint">Отмечайте только те функции, наличие которых проверили на сайте. Неотмеченные пункты — возможные направления для дополнительной проверки. Это ручной чек-лист, а не автоматический технический аудит.</p>
+      <div class="dialog-actions"><button type="button" class="secondary" id="cancelAudit">Отмена</button><button type="submit" class="primary">Сохранить анализ</button></div>
     </form>
   </dialog>
   <script src="/app.js"></script>

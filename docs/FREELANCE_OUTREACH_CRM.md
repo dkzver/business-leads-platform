@@ -32,3 +32,9 @@ Use public business contact details only where lawful, keep messages relevant an
 3. Activity timeline and follow-up reminders.
 4. Optional authenticated email provider integration with explicit per-message approval, rate limits, suppression list and audit log.
 5. Lawful company discovery adapters for supported public sources/APIs, with source attribution and geographic filters.
+
+## CSV import
+Use the **Импорт CSV** button. UTF-8 CSV files with comma or semicolon separators are supported. The first row must contain a company-name column (`name`, `company`, `название`, or `компания`). Recognized optional columns include country, city, category/industry, phone, email, website, source, status and notes. Each import is limited to 1,000 rows. Duplicate matching checks company + city + country, email, and normalized website. Rows without a company name are skipped.
+
+## Website audit
+Each company row has a manual website-audit action. The checklist covers HTTPS, mobile usability, service clarity, contact visibility, enquiry form, portfolio, online booking and perceived loading speed. The displayed percentage is a simple count of manually checked items, not a Lighthouse score or automated technical assessment. Save concrete observations and suggested improvements in the opportunity and notes fields.
