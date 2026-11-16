@@ -185,14 +185,14 @@ $('copyOutreach').onclick = () => copyText($('outreachBody').value, 'Предл�
 $('emailOutreach').onclick = () => {
   const company = companies.find(c => String(c.id) === $('outreachCompany').value);
   if (!company?.email) { $('outreachMessage').textContent = 'У этой компании не указан email. Добавьте адрес в карточку компании.'; return; }
-  const body = encodeURIComponent($('outreachBody').value + '\\n\\nЕсли вы не хотите получать подобные предложения, просто сообщите мне об этом.');
+  const body = encodeURIComponent($('outreachBody').value + '\n\nЕсли вы не хотите получать подобные предложения, просто сообщите мне об этом.');
   window.location.href = 'mailto:' + encodeURIComponent(company.email) + '?subject=' + encodeURIComponent($('outreachSubject').value) + '&body=' + body;
   $('outreachMessage').textContent = 'Черновик открыт в почтовом приложении. Проверьте его и отправьте вручную.';
 };
 $('exportBtn').onclick = () => {
   const headers = ['name','category','status','country','city','phone','email','website','source','notes'];
-  const csv = [headers.join(','), ...companies.map(c => headers.map(k => '"'+String(c[k] ?? '').replace(/"/g,'""')+'"').join(','))].join('\\r\\n');
-  const blob = new Blob(['\\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+  const csv = [headers.join(','), ...companies.map(c => headers.map(k => '"'+String(c[k] ?? '').replace(/"/g,'""')+'"').join(','))].join('\r\n');
+  const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob), a = document.createElement('a');
   a.href = url; a.download = 'freelance-outreach-leads.csv'; a.click(); URL.revokeObjectURL(url);
 };
@@ -200,14 +200,14 @@ $('exportBtn').onclick = () => {
 
 function parseCsv(text) {
   const rows=[]; let row=[], field='', quoted=false;
-  const firstLine=String(text).split(/\\r?\\n/,1)[0]||'';
+  const firstLine=String(text).split(/\r?\n/,1)[0]||'';
   const delimiter=(firstLine.split(';').length>firstLine.split(',').length)?';':',';
   for(let i=0;i<text.length;i++){
     const ch=text[i];
     if(quoted){ if(ch==='"' && text[i+1]==='"'){field+='"';i++;} else if(ch==='"') quoted=false; else field+=ch; }
     else if(ch==='"') quoted=true;
     else if(ch===delimiter){row.push(field);field='';}
-    else if(ch==='\\n' || ch==='\\r'){if(ch==='\\r' && text[i+1]==='\\n')i++;row.push(field);if(row.some(v=>v.trim()))rows.push(row);row=[];field='';}
+    else if(ch==='\n' || ch==='\r'){if(ch==='\r' && text[i+1]==='\n')i++;row.push(field);if(row.some(v=>v.trim()))rows.push(row);row=[];field='';}
     else field+=ch;
   }
   row.push(field);if(row.some(v=>v.trim()))rows.push(row);
@@ -223,7 +223,7 @@ $('importBtn').onclick=()=>$('importFile').click();
 $('importFile').onchange=async()=>{
  const file=$('importFile').files[0]; if(!file)return;
  try{
-  const rows=parseCsv((await file.text()).replace(/^\\uFEFF/,''));
+  const rows=parseCsv((await file.text()).replace(/^\uFEFF/,''));
   if(!rows.length)throw new Error('В CSV нет строк с компаниями.');
   const result=await request('/api/companies/import',{method:'POST',body:JSON.stringify({companies:rows})});
   await load(); showToast('Импортировано: '+result.imported+' · дубли: '+result.duplicates+' · пропущено: '+result.invalid);
